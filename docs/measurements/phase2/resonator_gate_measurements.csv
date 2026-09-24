@@ -1,0 +1,65 @@
+resonator/fractional delay comparison,linear.maxPitchErrorCents_C1_C6,0.0107334
+resonator/fractional delay comparison,linear.maxPitchErrorCents_C7_C8,0.0548828
+resonator/fractional delay comparison,linear.gainDb_frac0.5_at_0.25fs,-3.0103
+resonator/fractional delay comparison,linear.gainDb_frac0.5_at_0.45fs,-16.1134
+resonator/fractional delay comparison,linear.hfDecayRatio_frac0.5_vs_0,0.091194
+resonator/fractional delay comparison,linear.sweepSNRdB_3kHz,37.0587
+resonator/fractional delay comparison,linear.sweepMaxErrorJump,0.00749305
+resonator/fractional delay comparison,linear.nsPerSample,3.63921
+resonator/fractional delay comparison,hermite.maxPitchErrorCents_C1_C6,0.0103836
+resonator/fractional delay comparison,hermite.maxPitchErrorCents_C7_C8,0.136127
+resonator/fractional delay comparison,hermite.gainDb_frac0.5_at_0.25fs,-1.0721
+resonator/fractional delay comparison,hermite.gainDb_frac0.5_at_0.45fs,-12.6627
+resonator/fractional delay comparison,hermite.hfDecayRatio_frac0.5_vs_0,0.504245
+resonator/fractional delay comparison,hermite.sweepSNRdB_3kHz,62.109
+resonator/fractional delay comparison,hermite.sweepMaxErrorJump,0.000396999
+resonator/fractional delay comparison,hermite.nsPerSample,3.60596
+resonator/fractional delay comparison,lagrange3.maxPitchErrorCents_C1_C6,6.24164e-05
+resonator/fractional delay comparison,lagrange3.maxPitchErrorCents_C7_C8,0.00736956
+resonator/fractional delay comparison,lagrange3.gainDb_frac0.5_at_0.25fs,-1.0721
+resonator/fractional delay comparison,lagrange3.gainDb_frac0.5_at_0.45fs,-12.6627
+resonator/fractional delay comparison,lagrange3.hfDecayRatio_frac0.5_vs_0,0.504245
+resonator/fractional delay comparison,lagrange3.sweepSNRdB_3kHz,68.0563
+resonator/fractional delay comparison,lagrange3.sweepMaxErrorJump,0.000214653
+resonator/fractional delay comparison,lagrange3.nsPerSample,2.85336
+resonator/fractional delay comparison,thiran1.maxPitchErrorCents_C1_C6,2.0872e-05
+resonator/fractional delay comparison,thiran1.maxPitchErrorCents_C7_C8,5.49497e-05
+resonator/fractional delay comparison,thiran1.gainDb_frac0.5_at_0.25fs,9.7188e-08
+resonator/fractional delay comparison,thiran1.gainDb_frac0.5_at_0.45fs,3.37967e-08
+resonator/fractional delay comparison,thiran1.hfDecayRatio_frac0.5_vs_0,0.997825
+resonator/fractional delay comparison,thiran1.sweepSNRdB_3kHz,49.0213
+resonator/fractional delay comparison,thiran1.sweepMaxErrorJump,0.0147594
+resonator/fractional delay comparison,thiran1.nsPerSample,2.65197
+resonator/pitch C1-C6 across sample rates,worstPitchErrorCents_harmonic,6.73441e-05
+resonator/pitch C1-C6 across sample rates,worstPitchErrorCents_dispersive,0.00329423
+resonator/chromatic intervals,worstChromaticErrorCents_C3_C5,0.000108659
+resonator/frequency dependent decay accuracy,worstT60RelErr_fundamental,3.53651e-05
+resonator/frequency dependent decay accuracy,worstT60RelErr_hfReference,0.0144226
+resonator/sample rate consistency,t60Spread,2.47545e-05
+resonator/sample rate consistency,inharmonicitySpread,0.00714648
+resonator/sample rate consistency,inharmonicity@48k,0.0220268
+resonator/sample rate consistency,centroid@44k1,1735.54
+resonator/sample rate consistency,centroid@192k,1647.23
+resonator/sample rate consistency,centroidSpread_below20k,0.0536136
+resonator/frequency automation is click free,octave200ms.hfRatioDb_before,-44.0042
+resonator/frequency automation is click free,octave200ms.hfRatioDb_during,-42.9307
+resonator/frequency automation is click free,octave200ms.curvature_before,0.0148497
+resonator/frequency automation is click free,octave200ms.curvature_during,0.00726857
+resonator/frequency automation is click free,octave30ms.thiran.hfRatioDb_during,-19.3296
+resonator/frequency automation is click free,octave30ms.lagrange.hfRatioDb_during,-24.5259
+resonator/frequency automation is click free,octave30ms.thiran.curvature_during,0.0317946
+resonator/frequency automation is click free,octave30ms.lagrange.curvature_during,0.0238457
+resonator/near nyquist stability and tuning,pitchErrorCents@8000,3.84411e-13
+resonator/near nyquist stability and tuning,pitchErrorCents@12000,1.74102e-07
+resonator/near nyquist stability and tuning,pitchErrorCents@16000,3.84411e-13
+resonator/near nyquist stability and tuning,pitchErrorCents@19000,1.2959e-05
+resonator/impulse responses and dispersion,inharmonicity_disp0.0,1.15411e-06
+resonator/impulse responses and dispersion,inharmonicity_disp0.1,0.00502356
+resonator/impulse responses and dispersion,inharmonicity_disp0.3,0.0882693
+resonator/impulse responses and dispersion,inharmonicity_disp0.5,0.302999
+resonator/cpu per resonator,nsPerSample_thiran_loss_4stageDispersion,5.31344
+resonator/cpu per resonator,percentOfRealtimeCore_per_resonator@48k,0.0255045
+resonator/modal bank tuning decay and cpu,modal.worstPitchErrorCents,0.000314414
+resonator/modal bank tuning decay and cpu,modal.worstT60RelErr,0.000606896
+resonator/modal bank tuning decay and cpu,modal.nsPerSample_16modes,6.68932
+resonator/modal bank tuning decay and cpu,modal.nsPerModeSample,0.418082

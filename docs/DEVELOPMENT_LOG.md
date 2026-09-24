@@ -54,3 +54,24 @@ Locked visual reference stored at `design/reference/ARC_LOCKED_REFERENCE.png`
 * LTO made optional (`ARC_ENABLE_LTO`, default ON) because the serial LTRANS link costs
   ~1 min per iteration during development.
 
+---
+
+## Phase 2 — Resonator primitives (quality gate: PASS)
+
+* Implemented `DelayLine` (+ linear / Hermite / Lagrange-3 / Thiran-1 readers),
+  `OnePoleLoss` (two-point T60 match), `AllpassChain` dispersion, `WaveguideResonator`,
+  `ModalBank` (complex one-pole modes).
+* Built the measurement toolkit (`Tests/Analysis.*`): zero-padded FFT peak picking,
+  phase-slope frequency estimation (sub-0.001-cent), demodulated-envelope T60 with
+  harmonic-spacing windows, partial tracking, band-limited centroid, WAV output.
+* First gate run: **7 of 11 failed**. Root causes (all fixed, see RESONATOR_DESIGN §6):
+  unstable DC mode (loss filter G(0) > 1 when its pole was clamped), dispersion stage
+  budget bug (up to −211 cents near Nyquist), Thiran refinement oscillating at C7/C8
+  (7 cents), SR-dependent dispersion (18 % spread). Plus test-side issues: denormals in
+  benchmarks (tests now set FTZ/DAZ like `processBlock`), T60 windows not isolating
+  harmonics, inharmonicity search window catching the wrong partial, and an ill-posed
+  glide criterion (a 30 ms octave glide adds Doppler HF for *every* interpolator).
+* Decision: allpass fractional delay exactly matched at f0 (table in RESONATOR_DESIGN §3).
+* Final: 11/11 tests, 326 checks pass. Worst pitch error C1–C6 at 5 sample rates:
+  0.00007 cents. Loop cost 4.9 ns/sample.
+

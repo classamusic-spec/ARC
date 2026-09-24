@@ -1,5 +1,6 @@
 #include "ArcTest.h"
 
+#include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_events/juce_events.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -24,6 +25,8 @@ std::string outputDir()
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
+    // Match the plugin's audio thread (ScopedNoDenormals in processBlock).
+    juce::FloatVectorOperations::disableDenormalisedNumberSupport();
 
     std::vector<std::string> filters;
     bool listOnly = false;
