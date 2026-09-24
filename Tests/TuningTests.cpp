@@ -3,6 +3,8 @@
 #include "ArcTest.h"
 #include "VoiceRig.h"
 
+#include "Engine/ArcEngine.h"
+
 using namespace arctest;
 
 namespace
@@ -178,4 +180,75 @@ TEST_CASE ("tuning", "coupling compensation keeps pitch")
             MEASURE (tag + ".compensatedCents", cents[1]);
             CHECK_MSG (std::abs (cents[1]) < 1.5, tag << " " << cents[1]);
         }
+}
+
+TEST_CASE ("tuning", "compensation converges near unison")
+{
+    // Regression: a node ~20 cents from unison with the CORE drove the coupling
+    // estimator into a limit cycle (CORE loop hopping 126 / 129 / 132 Hz every few
+    // milliseconds): audio-rate loop FM that pumped energy and kept a released note
+    // ringing at full level. Sweep the degenerate region at strong couplings: the loop
+    // tuning must settle and released notes must decay.
+    double worstWobble = 0, worstTailRise = -1e9, worstLateSlope = -1e9;
+    int cases = 0;
+    for (auto topology : { arc::dsp::Topology::ring, arc::dsp::Topology::web })
+        for (float coupling : { 0.35f, 0.5f, 0.7f })
+            for (float ratio : { 0.97f, 0.985f, 0.995f, 1.0f, 1.005f, 1.015f, 1.03f })
+            {
+                arc::ArcEngine e;
+                arc::EngineParams p;
+                p.material = arc::MaterialType::metal;
+                p.materialMods.mass = 0.75f;
+                p.materialMods.loss = 0.3f;
+                p.coupling = coupling;
+                p.topology = topology;
+                p.chaos = 0.0f;
+                p.space = 0.0f;
+                p.nodes[0].radius = arc::radiusForRatio (arc::MaterialType::metal, 0, ratio, 0.5f, 0.5f);
+                e.setParameters (p);
+                e.prepare (kSr, 256);
+                std::vector<float> l (256), r (256);
+                std::vector<double> coreHz;
+                double levelAtRelease = 0, levelMid = 0, levelEnd = 0;
+                for (int b = 0; b < static_cast<int> (3.0 * kSr / 256); ++b)
+                {
+                    const double t = b * 256 / kSr;
+                    if (b == 0)
+                        e.noteOn (1, 48, 0.8f);
+                    if (t >= 1.2 && t < 1.2 + 256 / kSr)
+                        e.noteOff (1, 48);
+                    e.render (l.data(), r.data(), 256);
+                    double acc = 0;
+                    for (int i = 0; i < 256; ++i)
+                        acc += l[static_cast<size_t> (i)] * l[static_cast<size_t> (i)];
+                    if (t > 0.4 && t < 1.2)
+                        coreHz.push_back (e.getVoice (0).getCoreFrequency());
+                    if (t > 1.0 && t < 1.2)
+                        levelAtRelease = std::max (levelAtRelease, acc);
+                    if (t > 2.0 && t < 2.2)
+                        levelMid = std::max (levelMid, acc);
+                    if (t > 2.8)
+                        levelEnd = std::max (levelEnd, acc);
+                }
+                const auto [lo, hi] = std::minmax_element (coreHz.begin(), coreHz.end());
+                const double wobble = 1200.0 * std::log2 (*hi / *lo);
+                // Released notes of this very long-ringing material (T60 ~20 s) must decay
+                // steadily; the pumped case held its level (0 dB).
+                const double tailRise = 10.0 * std::log10 ((levelEnd + 1e-30) / (levelAtRelease + 1e-30));
+                const double lateSlope = 10.0 * std::log10 ((levelEnd + 1e-30) / (levelMid + 1e-30));
+                worstWobble = std::max (worstWobble, wobble);
+                worstTailRise = std::max (worstTailRise, tailRise);
+                worstLateSlope = std::max (worstLateSlope, lateSlope);
+                ++cases;
+                if (wobble > 1.0 || tailRise > -8.0 || lateSlope > -3.0)
+                    std::printf ("    %s coupling %.2f ratio %.3f: wobble %.2f cents, tail %.1f dB\n",
+                                 topology == arc::dsp::Topology::web ? "web" : "ring", coupling, ratio, wobble, tailRise);
+            }
+    MEASURE ("cases", cases);
+    MEASURE ("worstCoreLoopWobbleCents", worstWobble);
+    MEASURE ("worstTailVsRelease_dB", worstTailRise);
+    MEASURE ("worstLateDecay_dB_per_0.8s", worstLateSlope);
+    CHECK (worstWobble < 1.0);
+    CHECK (worstTailRise < -8.0);
+    CHECK (worstLateSlope < -3.0);
 }

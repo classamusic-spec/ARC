@@ -242,6 +242,32 @@ std::array<ResonantNetwork::ModeCorrection, kNumNodes>
             minResDistance = std::min (minResDistance, dphi * dphi);
         }
 
+        // Coincidence tapers. Near another loop's resonance the two modes split
+        // symmetrically (avoided crossing): that "shift" is not a tuning error, and the
+        // per-loop correction is ill-posed. Two measures, both ~0.07 rad wide:
+        //  - dynamic: distance of w_i from the other loops' *current* resonances;
+        //  - static: distance between the *intended* mode frequencies, which the
+        //    corrections never move, so it cannot feed back through them (measured:
+        //    a node 20 cents from unison with the CORE drove the dynamic taper and the
+        //    iteration into a limit cycle, i.e. audio-rate loop FM that pumped energy).
+        //    Two loops coupled by |Q_ik| split by ~2|Q_ik| rad of loop phase; the
+        //    ill-posed core of that region (|dphi| < |Q_ik|) is tapered and the 4th-order edge keeps
+        //    well-separated nodes fully compensated.
+        double staticTaper = 1.0;
+        for (int k = 0; k < kNumNodes; ++k)
+        {
+            const double fk = modeFrequency[static_cast<size_t> (k)];
+            if (k == i || fk <= 0.0 || fm <= 0.0)
+                continue;
+            const double ratio = fm / fk;
+            const double dphi = kTwoPi * (ratio - std::max (1.0, std::round (ratio)));
+            const double qik = static_cast<double> (qTarget[static_cast<size_t> (i)][static_cast<size_t> (k)]);
+            const double w2 = 0.005 + qik * qik;
+            const double d4 = dphi * dphi * dphi * dphi;
+            staticTaper = std::min (staticTaper, d4 / (d4 + w2 * w2));
+        }
+        const double taper = minResDistance / (minResDistance + 0.005) * staticTaper;
+
         cd a[kNumNodes - 1][kNumNodes - 1], x[kNumNodes - 1];
         for (int r = 0; r < kNumNodes - 1; ++r)
         {
@@ -290,15 +316,10 @@ std::array<ResonantNetwork::ModeCorrection, kNumNodes>
         for (int m = 0; m < kNumNodes - 1; ++m)
             rr += static_cast<double> (qTarget[static_cast<size_t> (i)][static_cast<size_t> (idx[m])]) * x[m];
 
-        // Near a coincidence (another loop resonant at w_i) the modes split
-        // symmetrically (avoided crossing): the "shift" is not a tuning error, so the
-        // correction is tapered off there.
         // Mode condition at the intended frequency w: the loop must provide phase
         // 2 pi + arg(R) there, i.e. a loop tuned to f / (1 + arg(R) / 2 pi) (exact for a
         // loop whose phase delay is flat between its tuning and w, as at the fundamental).
-        // Only a genuine coincidence (within ~0.07 rad of loop phase) tapers.
-        const double taper = minResDistance / (minResDistance + 0.005);
-        out[static_cast<size_t> (i)].frequencyShift = clamp (taper * std::arg (rr) / kTwoPi, -0.059, 0.059);
+        out[static_cast<size_t> (i)].frequencyShift = clamp (taper * std::arg (rr) / kTwoPi, -0.12, 0.12);
         out[static_cast<size_t> (i)].gainFactor = clamp (1.0 + taper * (std::abs (rr) - 1.0), 0.2, 1.0);
     }
     return out;

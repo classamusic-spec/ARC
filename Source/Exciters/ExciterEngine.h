@@ -98,18 +98,33 @@ public:
         air.release();
     }
 
-    /** One sample of excitation force. coreSignal: CORE loop output (feedback types). */
-    inline float tick (float coreSignal) noexcept
+    /** One sample of excitation force for the CORE. coreSignal: CORE loop output
+        (feedback types). `nodeForce` receives the part that may be spread to the outer
+        nodes: all of it for STRIKE / PLUCK, only the feed-forward turbulence for AIR and
+        nothing for BOW (see ResonantNetwork::writeInputs). */
+    inline float tick (float coreSignal, float& nodeForce) noexcept
     {
         switch (type)
         {
-            case ExciterType::strike: return strike.tick();
-            case ExciterType::pluck:  return pluck.tick();
-            case ExciterType::bow:    return regulate (bow.tick (coreSignal), coreSignal, 0.45f);
-            case ExciterType::air:    return regulate (air.tick (coreSignal), coreSignal, 0.28f);
-            case ExciterType::count:  break;
+            case ExciterType::strike: nodeForce = strike.tick(); return nodeForce;
+            case ExciterType::pluck:  nodeForce = pluck.tick(); return nodeForce;
+            case ExciterType::bow:    nodeForce = 0.0f; return regulate (bow.tick (coreSignal), coreSignal, 0.45f);
+            case ExciterType::air:
+            {
+                const float f = regulate (air.tick (coreSignal), coreSignal, 0.28f);
+                nodeForce = air.feedForward() * driveGain;
+                return f;
+            }
+            case ExciterType::count: break;
         }
+        nodeForce = 0.0f;
         return 0.0f;
+    }
+
+    inline float tick (float coreSignal) noexcept
+    {
+        float unused;
+        return tick (coreSignal, unused);
     }
 
     bool isActive() const noexcept
@@ -124,6 +139,10 @@ public:
         }
         return false;
     }
+
+    /** Selects the exciter a fresh note will use before it is triggered (so the voice's
+        first control update already designs for it). */
+    void selectType (ExciterType t) noexcept { type = t; }
 
     bool isSustained() const noexcept { return type == ExciterType::bow || type == ExciterType::air; }
     ExciterType getType() const noexcept { return type; }

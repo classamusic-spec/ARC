@@ -124,4 +124,25 @@ distance to a loop's nearest **non-DC** mode (short loops sit near their DC mode
 low frequency — this alone caused a 12 % under-correction), and the phase → frequency
 conversion is exactly `arg R / 2π` (dividing by ω·τ_group introduced a 1/(1+shift) error).
 Near a genuine coincidence (another loop resonant within ~0.07 rad of loop phase) the
-modes split symmetrically and the correction tapers to zero. Authority ±100 cents.
+modes split symmetrically and the correction tapers to zero.
+
+### 6.1 Convergence near unison (Phase 9)
+The corrections of coupled loops depend on each other, so the voice iterates them
+(every 4 control blocks). With a node ~20 cents from unison with the CORE (found by the
+factory preset audit: "Black Bell" held its level after release, centroid 6.4 kHz), the
+iteration fell into a period-3 limit cycle — the CORE loop hopped 126 / 129 / 132 Hz
+every few milliseconds, i.e. audio-rate loop FM that pumped energy parametrically. Two
+changes:
+
+* a **static coincidence taper** computed from the *intended* mode frequencies (which
+  the corrections never move, so it cannot feed back), 4th-order in the phase distance
+  with a width that scales with the pair's coupling: `taper = d⁴ / (d⁴ + (0.005 + |Q_ik|²)²)`.
+  Two loops coupled by |Q_ik| split by ~2|Q_ik| rad; inside that region the per-loop
+  correction is ill-posed, so the doublet is left centred on the note (measured: node
+  at 0.985–1.015 × f0, WEB coupling 0.4 → doublet centroid within ±3.4 cents);
+* under-relaxation 0.25 (was 0.5).
+
+Authority raised from ±5.9 % to ±12 % (extreme TENSION: worst 1.9 cents, was 8.3).
+Regression test `tuning/compensation converges near unison`: 42 configurations (ring /
+web × coupling 0.35–0.7 × node ratio 0.97–1.03): loop wobble ≤ 0.19 cents (the old
+estimator fails all three checks), released notes decay steadily.

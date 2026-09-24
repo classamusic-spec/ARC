@@ -35,6 +35,7 @@ public:
         gate = false;
         active = false;
         noiseLp = 0.0f;
+        lastTurbulence = 0.0f;
         dc.reset();
         noiseHp.reset();
     }
@@ -43,7 +44,7 @@ public:
     {
         rng.seed (seed);
         setTargets (energy, flow, turbulence, tone, 0.0f);
-        attackCoeff = static_cast<float> (1.0 - std::exp (-1.0 / ((0.2 - 0.14 * clamp (energy, 0.0f, 1.0f)) * sr)));
+        attackCoeff = static_cast<float> (1.0 - std::exp (-1.0 / ((0.2 - 0.14 * static_cast<double> (clamp (energy, 0.0f, 1.0f))) * sr)));
         gate = true;
         active = true;
     }
@@ -80,7 +81,10 @@ public:
     inline float tick (float loopSignal) noexcept
     {
         if (! active)
+        {
+            lastTurbulence = 0.0f;
             return 0.0f;
+        }
         if (gate)
             env += attackCoeff * (1.0f - env);
         else
@@ -89,6 +93,7 @@ public:
             if (env < 1.0e-4f)
             {
                 active = false;
+                lastTurbulence = 0.0f;
                 return 0.0f;
             }
         }
@@ -101,8 +106,12 @@ public:
         const float breathNorm = breath / std::max (pressure, 1.0e-3f);
         const float gainPerPass = breathNorm * (loopLoss * tonalFactor + std::max (0.0f, tonalFactor - 1.0f) * speakPerPass);
         const float column = gainPerPass * sat * fastTanh (loopSignal / sat);
-        return dc.process (column + 0.25f * turbulence);
+        lastTurbulence = 0.25f * turbulence; // already DC-free (noiseHp)
+        return dc.process (column) + lastTurbulence;
     }
+
+    /** Feed-forward part of the last tick (turbulence only): safe to spread to nodes. */
+    float feedForward() const noexcept { return lastTurbulence; }
 
     bool isActive() const noexcept { return active; }
     bool isGated() const noexcept { return gate; }
@@ -114,6 +123,7 @@ private:
     double sr = 48000.0;
     float env = 0.0f, attackCoeff = 0.001f, releaseCoeff = 0.001f;
     float pressure = 0.5f, noiseAmount = 0.3f, tonalFactor = 1.0f, loopLoss = 0.01f, speakPerPass = 0.01f, noiseCoeff = 0.0f, noiseLp = 0.0f;
+    float lastTurbulence = 0.0f;
     bool gate = false, active = false;
 };
 

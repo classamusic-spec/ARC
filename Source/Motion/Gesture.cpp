@@ -26,7 +26,17 @@ void Gesture::sample (double phase, float& dr, float& da) const noexcept
     const int i1 = (i0 + 1) % kPoints;
     const float f = static_cast<float> (x - std::floor (x));
     dr = dRadius[static_cast<size_t> (i0)] + f * (dRadius[static_cast<size_t> (i1)] - dRadius[static_cast<size_t> (i0)]);
-    da = dAngle[static_cast<size_t> (i0)] + f * (dAngle[static_cast<size_t> (i1)] - dAngle[static_cast<size_t> (i0)]);
+    // Angles are periodic: interpolate along the shorter arc so orbits pass through +-pi
+    // (and wrap from the last point to the first) without spinning back.
+    const float a0 = dAngle[static_cast<size_t> (i0)];
+    const float step = wrapAngle (dAngle[static_cast<size_t> (i1)] - a0);
+    da = wrapAngle (a0 + f * step);
+}
+
+float wrapAngle (float a) noexcept
+{
+    constexpr float twoPi = 6.2831853f;
+    return a - twoPi * std::floor ((a + 3.14159265f) / twoPi);
 }
 
 double divisionBeats (int division, double beatsPerBar) noexcept
@@ -102,6 +112,10 @@ Gesture buildGesture (const std::vector<GestureSample>& raw, double beatsPerSeco
     smooth (a);
 
     // Loop closure: cross-fade the last 12 % back to the start so the cycle is seamless.
+    // The angle closes modulo whole turns: a drag that circles the core becomes an orbit
+    // instead of unwinding at the end of every cycle.
+    const double turns = std::round ((a[Gesture::kPoints - 1] - a[0]) / (2.0 * kPi));
+    const double angleEnd = a[0] + 2.0 * kPi * turns;
     const int fade = Gesture::kPoints / 8;
     for (int i = 0; i < fade; ++i)
     {
@@ -109,14 +123,14 @@ Gesture buildGesture (const std::vector<GestureSample>& raw, double beatsPerSeco
         const double w = static_cast<double> (i + 1) / (fade + 1);
         const double sm = w * w * (3.0 - 2.0 * w);
         r[static_cast<size_t> (idx)] += sm * (r[0] - r[static_cast<size_t> (idx)]);
-        a[static_cast<size_t> (idx)] += sm * (a[0] - a[static_cast<size_t> (idx)]);
+        a[static_cast<size_t> (idx)] += sm * (angleEnd - a[static_cast<size_t> (idx)]);
     }
 
-    // Offsets from the start position, bounded.
+    // Offsets from the start position: radius bounded, angle wrapped to (-pi, pi].
     for (int i = 0; i < Gesture::kPoints; ++i)
     {
         g.dRadius[static_cast<size_t> (i)] = static_cast<float> (std::clamp (r[static_cast<size_t> (i)] - r[0], -1.0, 1.0));
-        g.dAngle[static_cast<size_t> (i)] = static_cast<float> (std::clamp (a[static_cast<size_t> (i)] - a[0], -2.0 * kPi, 2.0 * kPi));
+        g.dAngle[static_cast<size_t> (i)] = wrapAngle (static_cast<float> (a[static_cast<size_t> (i)] - a[0]));
     }
 
     g.durationSeconds = static_cast<float> (duration);
@@ -136,12 +150,43 @@ Gesture buildGesture (const std::vector<GestureSample>& raw, double beatsPerSeco
     return g;
 }
 
+Gesture orbitGesture (float seconds, float beats, float turns, float radiusWobble)
+{
+    Gesture g;
+    const float wobbleCycles = 2.0f * std::max (1.0f, std::round (std::abs (turns)));
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double t = static_cast<double> (i) / Gesture::kPoints;
+        g.dAngle[static_cast<size_t> (i)] = wrapAngle (static_cast<float> (2.0 * kPi * turns * t));
+        g.dRadius[static_cast<size_t> (i)] = radiusWobble * static_cast<float> (std::sin (2.0 * kPi * wobbleCycles * t));
+    }
+    g.durationSeconds = std::max (0.05f, seconds);
+    g.durationBeats = std::max (0.0f, beats);
+    g.valid = true;
+    return g;
+}
+
+Gesture swayGesture (float seconds, float beats, float angleSwing, float radiusSwing)
+{
+    Gesture g;
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double t = static_cast<double> (i) / Gesture::kPoints;
+        g.dAngle[static_cast<size_t> (i)] = angleSwing * static_cast<float> (std::sin (2.0 * kPi * t));
+        g.dRadius[static_cast<size_t> (i)] = radiusSwing * static_cast<float> (std::sin (4.0 * kPi * t));
+    }
+    g.durationSeconds = std::max (0.05f, seconds);
+    g.durationBeats = std::max (0.0f, beats);
+    g.valid = true;
+    return g;
+}
+
 std::string Gesture::serialise() const
 {
     if (! valid)
         return {};
     std::ostringstream os;
-    os.precision (6);
+    os.precision (9); // max_digits10: text round trip is exact (DAW recall is bit-identical)
     os << "v1 " << durationSeconds << " " << durationBeats;
     for (int i = 0; i < kPoints; ++i)
         os << " " << dRadius[static_cast<size_t> (i)] << " " << dAngle[static_cast<size_t> (i)];
@@ -169,7 +214,7 @@ Gesture Gesture::deserialise (const std::string& text)
             if (! std::isfinite (r) || ! std::isfinite (a))
                 g.valid = false;
             r = std::clamp (r, -1.0f, 1.0f);
-            a = std::clamp (a, -6.2831853f, 6.2831853f);
+            a = wrapAngle (a);
         }
     }
     return g;

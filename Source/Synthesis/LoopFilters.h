@@ -116,7 +116,7 @@ inline bool allpassForPhaseDelay (double tau, double w, double& aOut) noexcept
 template <int MaxStages>
 struct AllpassChain
 {
-    std::array<float, MaxStages> s {};
+    std::array<float, static_cast<size_t> (MaxStages)> s {};
     float a = 0.0f;
     int stages = 0;
 
@@ -143,7 +143,7 @@ struct AllpassChain
 
     static double phaseDelay (double aCoeff, int numStages, double w) noexcept
     {
-        if (numStages <= 0 || aCoeff == 0.0)
+        if (numStages <= 0 || aCoeff >= 0.0) // a = 0: pure delay (a is never positive)
             return static_cast<double> (numStages);
         return numStages * allpassPhaseDelay (aCoeff, w);
     }
@@ -204,13 +204,14 @@ struct SelectivityStage
     static void response (const Coeffs& c, double w, double& re, double& im) noexcept
     {
         // BP(e^jw) = b0 (1 - e^-2jw) / (1 + a1 e^-jw + a2 e^-2jw)
-        const double nr = c.b0 * (1.0 - std::cos (2.0 * w)), ni = c.b0 * std::sin (2.0 * w);
-        const double dr = 1.0 + c.a1 * std::cos (w) + c.a2 * std::cos (2.0 * w);
-        const double di = -c.a1 * std::sin (w) - c.a2 * std::sin (2.0 * w);
+        const double b0 = c.b0, a1 = c.a1, a2 = c.a2, sel = c.s;
+        const double nr = b0 * (1.0 - std::cos (2.0 * w)), ni = b0 * std::sin (2.0 * w);
+        const double dr = 1.0 + a1 * std::cos (w) + a2 * std::cos (2.0 * w);
+        const double di = -a1 * std::sin (w) - a2 * std::sin (2.0 * w);
         const double den = dr * dr + di * di;
         const double br = (nr * dr + ni * di) / den, bi = (ni * dr - nr * di) / den;
-        re = (1.0 - c.s) + c.s * br;
-        im = c.s * bi;
+        re = (1.0 - sel) + sel * br;
+        im = sel * bi;
     }
 };
 

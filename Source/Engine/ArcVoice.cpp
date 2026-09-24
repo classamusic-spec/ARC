@@ -72,6 +72,8 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
     note = newNote;
     channel = newChannel;
     velocity = newVelocity;
+    exciter.reset();
+    exciter.selectType (ctl.exciterType);
     pressure = 0.0f;
     noteBend = 0.0f;
     timbre = 0.0f;
@@ -160,7 +162,7 @@ void ArcVoice::glideTo (int newNote, float newVelocity, float glideSeconds, bool
 {
     note = newNote;
     const double updatesPerSecond = sampleRate / controlInterval;
-    glideCoeff = glideSeconds > 0.0f ? smoothingCoeff (glideSeconds / 3.0, updatesPerSecond) : 0.0f;
+    glideCoeff = glideSeconds > 0.0f ? smoothingCoeff (static_cast<double> (glideSeconds) / 3.0, updatesPerSecond) : 0.0f;
     if (glideCoeff == 0.0f)
         pitchNote = static_cast<float> (newNote);
     state = State::active;
@@ -198,12 +200,15 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
 {
     const auto& m = ctl.material;
     const double sr = sampleRate;
+    // The voice's own exciter (chosen at note-on). Switching EXCITER only affects new
+    // notes: sounding voices keep their dispersion, selectivity and loudness.
+    const auto voiceExciter = exciter.getType();
 
     if (! immediate)
         pitchNote = static_cast<float> (note) + glideCoeff * (pitchNote - static_cast<float> (note));
     else
         pitchNote = static_cast<float> (note);
-    fundamental = midiToHz (static_cast<double> (pitchNote) + static_cast<double> (ctl.bendSemitones) + noteBend);
+    fundamental = midiToHz (static_cast<double> (pitchNote) + static_cast<double> (ctl.bendSemitones) + static_cast<double> (noteBend));
     const double f0 = clamp (fundamental, kMinCoreFrequency, 0.42 * sr);
     if (exciter.isSustained())
         intonationFilter.set (SelectivityStage::design (kTwoPi * f0 / sr, 2.0, 0.98));
@@ -213,7 +218,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
                                     ? std::pow (0.03f, std::pow (clamp (ctl.releaseDamping, 0.0f, 1.0f), 0.7f))
                                     : 1.0f;
     releaseT60Mult = immediate ? targetRelease : targetRelease + 0.85f * (releaseT60Mult - targetRelease);
-    pluckDampMult = ctl.exciterType == ExciterType::pluck ? std::exp2 (-4.0f * ctl.exciter.pluckDamp) : 1.0f;
+    pluckDampMult = voiceExciter == ExciterType::pluck ? std::exp2 (-4.0f * ctl.exciter.pluckDamp) : 1.0f;
     // FREEZE: only voices that were sounding when it engaged are captured.
     const float freezeTarget = freezeEpochAtStart < ctl.freezeEpoch ? ctl.freeze : 0.0f;
     voiceFreeze = immediate ? freezeTarget : voiceFreeze + 0.25f * (freezeTarget - voiceFreeze);
@@ -261,12 +266,12 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     auto energyFactor = [&] (int i)
     {
         const float a = std::sqrt (smoothEnergy[static_cast<size_t> (i)]);
-        return 1.0 + static_cast<double> (m.energyTuning) * std::min (1.0f, a / 0.25f);
+        return 1.0 + static_cast<double> (m.energyTuning) * static_cast<double> (std::min (1.0f, a / 0.25f));
     };
 
     // FREEZE removes every dissipative element: selectivity fades out with it.
     const float selFreeze = 1.0f - clamp (voiceFreeze, 0.0f, 1.0f);
-    const double coreDispFactor = ctl.exciterType == ExciterType::bow ? 0.3 : 1.0;
+    const double coreDispFactor = voiceExciter == ExciterType::bow ? 0.3 : 1.0;
 
     // Applies the coupling corrections of node i: pre-shift the loop so the coupled
     // mode lands on the intended frequency, and lengthen the loop's decay so the
@@ -294,25 +299,25 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
         n.dispersion = disp;
         n.dispersionStages = ctl.dispersionStages;
         n.selectivity = sel;
-        n.loopSelectivity = loopSel * selFreeze;
+        n.loopSelectivity = loopSel * static_cast<double> (selFreeze);
         n.outputGain = outGain;
         n.pan = pan;
     };
 
     // --- CORE --------------------------------------------------------------------------
     {
-        const double fCore = f0 * std::exp2 ((ctl.chaosDetuneCents[0] + intonationCents) / 1200.0) * energyFactor (0);
+        const double fCore = f0 * std::exp2 (static_cast<double> (ctl.chaosDetuneCents[0] + intonationCents) / 1200.0) * energyFactor (0);
         const float fc = static_cast<float> (fCore);
         float t60f, hfRef, t60h;
         lossDesign (m, fc, static_cast<float> (sr), t60f, hfRef, t60h);
-        const double coreSel = m.coreSelectivity * coreSelectivityFactor (ctl.exciterType);
+        const double coreSel = m.coreSelectivity * coreSelectivityFactor (voiceExciter);
         // Sustained drives (bow / air) lock onto whichever CORE mode is most resonant;
         // in-loop selectivity keeps them on the fundamental of high-Q materials.
-        const double coreLoopSel = (ctl.exciterType == ExciterType::bow || ctl.exciterType == ExciterType::air)
-                                       ? 0.85 * m.coreSelectivity
+        const double coreLoopSel = (voiceExciter == ExciterType::bow || voiceExciter == ExciterType::air)
+                                       ? 0.85 * static_cast<double> (m.coreSelectivity)
                                        : 0.0;
         applyNode (kCore, fCore, t60f * decayCommon, hfRef, t60h * decayCommon * std::sqrt (pluckDampMult),
-                   m.coreDispersion * coreDispFactor, coreSel, coreLoopSel, m.coreLevel, 0.0f);
+                   static_cast<double> (m.coreDispersion) * coreDispFactor, coreSel, coreLoopSel, m.coreLevel, 0.0f);
         coreFrequency = settings.nodes[kCore].frequency;
     }
 
@@ -321,8 +326,8 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     {
         const auto u = static_cast<size_t> (i);
         const double jitterCents = 40.0 * static_cast<double> (unitJitter[u]) * static_cast<double> (clamp (ctl.chaos, 0.0f, 1.0f));
-        const double ratio = m.nodeRatio[u] * std::exp2 (static_cast<double> (ctl.nodeOffsetOctaves[u]))
-                             * std::exp2 ((m.nodeDetuneCents[u] + ctl.chaosDetuneCents[u + 1] + jitterCents) / 1200.0)
+        const double ratio = static_cast<double> (m.nodeRatio[u]) * std::exp2 (static_cast<double> (ctl.nodeOffsetOctaves[u]))
+                             * std::exp2 ((static_cast<double> (m.nodeDetuneCents[u] + ctl.chaosDetuneCents[u + 1]) + jitterCents) / 1200.0)
                              * energyFactor (i + 1);
         const double f = clamp (f0 * ratio, kMinNodeFrequency, 0.45 * sr);
         const float ff = static_cast<float> (f);
@@ -339,18 +344,37 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     }
     injectWeights[kCore] = 1.0f;
 
+    // A bowed / blown CORE must stay the dominant resonator. At strong coupling its mode
+    // is pulled beyond any retuning (measured: > 12 % at COUPLING 0.65 on a WEB, directly
+    // through the spokes and indirectly through strongly coupled nodes) and the drive
+    // can no longer sustain it: the "wolf tone" limit of real bowed strings. Sustained
+    // exciters soft-limit each edge's rotation (tanh knee: 0.35 rad on CORE<->node
+    // spokes, 0.6 rad on node<->node edges); moderate settings are barely touched
+    // (-10 % at the default COUPLING). See docs/EXCITERS.md, "Playability maps".
+    const bool sustainedDrive = exciter.isSustained();
     for (int e = 0; e < kNumEdges; ++e)
-        settings.edgeTheta[static_cast<size_t> (e)] = ctl.edgeTheta[static_cast<size_t> (e)] * m.couplingScale * couplingSaturation;
+    {
+        float theta = ctl.edgeTheta[static_cast<size_t> (e)] * m.couplingScale * couplingSaturation;
+        if (sustainedDrive)
+        {
+            const float knee = e < 4 ? 0.35f : 0.6f; // radians of rotation
+            const float phi = 2.0f * std::atan (0.5f * theta);
+            theta = 2.0f * std::tan (0.5f * knee * std::tanh (phi / knee));
+        }
+        settings.edgeTheta[static_cast<size_t> (e)] = theta;
+    }
 
     network.configure (settings, immediate);
 
     if (! immediate && ctl.couplingCompensation && (controlCounter & 3) == 0)
     {
+        // Under-relaxed fixed-point iteration (every 4 control blocks, ~5 ms time
+        // constant): the corrections of coupled loops depend on each other.
         const auto corr = network.estimateModeCorrections (intendedFrequency);
         for (int i = 0; i < kNumNodes; ++i)
         {
-            freqShift[static_cast<size_t> (i)] += 0.5 * (corr[static_cast<size_t> (i)].frequencyShift - freqShift[static_cast<size_t> (i)]);
-            gainFactor[static_cast<size_t> (i)] += 0.5 * (corr[static_cast<size_t> (i)].gainFactor - gainFactor[static_cast<size_t> (i)]);
+            freqShift[static_cast<size_t> (i)] += 0.25 * (corr[static_cast<size_t> (i)].frequencyShift - freqShift[static_cast<size_t> (i)]);
+            gainFactor[static_cast<size_t> (i)] += 0.25 * (corr[static_cast<size_t> (i)].gainFactor - gainFactor[static_cast<size_t> (i)]);
         }
     }
     else if (! ctl.couplingCompensation)
@@ -364,7 +388,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     // offset, and a per-exciter pitch slope (a strike's momentum spreads over longer
     // periods at low pitch; sustained drives regulate their own level).
     {
-        const int ex = static_cast<int> (ctl.exciterType);
+        const int ex = static_cast<int> (voiceExciter);
         static constexpr float kPitchSlope[4] = { -0.55f, -0.05f, 0.08f, 0.0f };
         const float slope = kPitchSlope[clamp (ex, 0, 3)];
         outputNorm = m.outputGain * dbToGain (m.exciterGainDb[static_cast<size_t> (clamp (ex, 0, 3))])
@@ -408,7 +432,7 @@ void ArcVoice::trackIntonation (float coreSample) noexcept
                     const double target = clamp (fundamental, 16.0, 0.42 * sampleRate);
                     const double errCents = 1200.0 * std::log2 (target / measured);
                     if (std::abs (errCents) < 150.0)
-                        intonationCents = static_cast<float> (clamp (intonationCents + 0.5 * errCents, -60.0, 60.0));
+                        intonationCents = static_cast<float> (clamp (static_cast<double> (intonationCents) + 0.5 * errCents, -60.0, 60.0));
                     intonationPeriodAcc = 0.0;
                     intonationPeriods = 0;
                 }
@@ -454,8 +478,9 @@ void ArcVoice::renderSpan (float* outL, float* outR, int n) noexcept
     for (int s = 0; s < n; ++s)
     {
         network.readOutputs (y);
-        const float e = exciter.tick (y[kCore]) * drive;
-        network.writeInputs (y, e, injectWeights.data(), rawCore);
+        float nodeForce;
+        const float e = exciter.tick (y[kCore], nodeForce) * drive;
+        network.writeInputs (y, e, nodeForce * drive, injectWeights.data(), rawCore);
         if (trackPitch)
             trackIntonation (y[kCore]);
         float l, r;
@@ -474,7 +499,7 @@ void ArcVoice::renderSpan (float* outL, float* outR, int n) noexcept
     blockExciterAcc += eAcc;
 }
 
-void ArcVoice::finishBlock (int n, const VoiceControl& ctl) noexcept
+void ArcVoice::finishBlock (int n, const VoiceControl&) noexcept
 {
     nodeEnergy = network.takeNodeEnergy();
     // Energy-dependent tuning must follow the *envelope* (~40 ms), not the waveform:

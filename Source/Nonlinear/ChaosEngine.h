@@ -37,7 +37,7 @@ public:
     {
         const float c = dsp::clamp (chaos, 0.0f, 1.0f);
         const float a = c * c;
-        const double rate = 0.15 + 2.5 * c;
+        const double rate = 0.15 + 2.5 * static_cast<double> (c);
         for (size_t i = 0; i < detune.size(); ++i)
         {
             const float w = detune[i].next (dt, rate * (1.0 + 0.23 * static_cast<double> (i)));

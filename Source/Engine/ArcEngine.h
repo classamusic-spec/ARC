@@ -51,6 +51,14 @@ public:
     bool postGesture (int node, const Gesture& g) noexcept;
     /** Deterministic seed for chaos and motion (preset recall). */
     void postSeed (uint32_t seed) noexcept;
+    /** Replace node n's gesture immediately. Audio thread only (between render calls). */
+    void setGestureNow (int node, const Gesture& g) noexcept
+    {
+        if (g.valid)
+            motion.setGesture (node, g);
+        else
+            motion.clearGesture (node);
+    }
     const MotionEngine& getMotion() const noexcept { return motion; }
 
     Telemetry& getTelemetry() noexcept { return telemetry; }

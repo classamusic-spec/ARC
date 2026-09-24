@@ -32,9 +32,11 @@ Karplus-style noise burst (every note differs), then the pluck-position comb
 
 ## BOW
 Friction force `F = env · dv · r(dv)`, `dv = vb − vs`, bow table
-`r = clamp((|dv·slope| + knee)^−4, 0.01, 0.98)` (Smith/Cook). `vs` is the CORE loop output,
-so the network's own period sets the pitch (Helmholtz-like stick-slip).
-* PRESSURE → slope (stick region), SPEED → vb, FRICTION → knee + rosin noise.
+`r = clamp((|dv|·slope/vb + knee)^−4, 0.01, 0.98)` (Smith/Cook, stick width relative to the
+bow velocity). `vs` is the CORE loop output, so the network's own period sets the pitch
+(Helmholtz-like stick-slip).
+* PRESSURE → stick region as a fraction of the bow velocity (20 % flautando … 65 %
+  pressed), SPEED → vb (amplitude), FRICTION → knee + rosin noise.
 * Contact force follows the envelope: the bow lands on attack and is **lifted** on
   release. (A bow that only slowed down stayed in contact and damped GLASS by 24 dB
   in 50 ms — found by the release test.)
@@ -59,6 +61,34 @@ so the network's own period sets the pitch (Helmholtz-like stick-slip).
 * Measured: breathy vs tonal spectral flatness ratio > 1.5 on every material; pitch
   within 0.6 cents (MEMBRANE +5.9: its energy-dependent tuning); modulation depth
   ≤ −35 dB (no regulator hunting).
+
+## Collocation (BOW, AIR) — Phase 9 fix
+A feedback exciter computes its force from the CORE's own motion. Applied at the CORE
+that is a collocated resistance (a passive damper for a resting bow, the intended
+negative resistance for a speaking one). Until Phase 9 the same force was *also*
+injected into the outer nodes (`nodeSpread`): a state-dependent force applied at a
+different point is non-collocated feedback, which can be active. Measured: a bow at
+rest (SPEED 0) on METAL made node B (196.9 Hz) self-oscillate from −60 dB to −11 dB in
+0.8 s. Now BOW injects only at the CORE, and AIR spreads only its feed-forward part
+(turbulence) to the nodes (`ExciterEngine::tick (core, nodeForce)`,
+`ResonantNetwork::writeInputs (y, core, nodes, …)`).
+
+## Coupling limit for driven voices ("wolf tone" limit)
+At strong COUPLING the CORE's mode is pulled beyond any retuning (> 12 % at 0.65 on a
+WEB) and no drive can sustain it — the same physics as the wolf tone of a bowed cello
+whose body resonance couples too strongly to the string. Voices driven by BOW/AIR
+soft-limit each edge's rotation with a tanh knee (0.35 rad on CORE↔node spokes, 0.6 rad
+on node↔node edges). The default COUPLING is barely affected (−10 %); the top of the
+range now thickens the tone instead of silencing it.
+
+## Playability maps
+`docs/measurements/phase9/playability_maps.txt`: level / HNR (/ centroid) over
+PRESSURE × SPEED for BOW and COUPLING × FLOW for AIR, all four materials, C3.
+
+| | before Phase 9 | after |
+|---|---|---|
+| BOW, PRESSURE × SPEED | speaks only on a diagonal band (pressure ≤ speed); rest silent; METAL at low speed −13 dB of non-harmonic garbage (HNR −65 dB) | speaks everywhere on all materials: SPEED −40 → −19 dB, PRESSURE brightens the centroid by ~45 %, HNR 25–48 dB |
+| AIR, COUPLING ≥ 0.65 (WEB) | silent / noise on GLASS, METAL, WOOD | METAL, MEMBRANE speak at every COUPLING; GLASS up to 0.8 with FLOW ≥ 0.8; WOOD up to 0.65 (at 0.8 it becomes multiphonic — known limitation) |
 
 ## Drive regulation (BOW, AIR)
 An envelope follower on the CORE (10 ms attack / 120 ms release) eases the injected

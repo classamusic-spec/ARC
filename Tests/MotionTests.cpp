@@ -204,6 +204,54 @@ TEST_CASE ("motion", "motion moves the network and follows tempo when synced")
     CHECK (*smx - *smn == 0.0f);
 }
 
+TEST_CASE ("motion", "synced drift is phase-locked to the host timeline")
+{
+    // SYNC + a playing host: the drift is a function of the song position, so the same
+    // bar always moves the network the same way (and a relocated playhead lands on the
+    // same shape). 1-bar cycle at 120 bpm = 2 s; the pattern repeats after 4 cycles.
+    auto render = [] (double startPpq)
+    {
+        arc::ArcEngine e;
+        auto p = base();
+        p.motionDepth = 1.0f;
+        p.sync = true;
+        p.motionDivision = arc::SyncDivision::bar1;
+        e.setParameters (p);
+        e.prepare (kSr, kBlock);
+        std::vector<float> radius;
+        std::vector<float> l (kBlock), r (kBlock);
+        for (int b = 0; b < static_cast<int> (4.0 * kSr / kBlock); ++b)
+        {
+            arc::TransportInfo t;
+            t.valid = t.playing = true;
+            t.bpm = 120.0;
+            t.ppqPosition = startPpq + b * kBlock / kSr * 2.0;
+            e.setTransport (t);
+            e.render (l.data(), r.data(), kBlock);
+            radius.push_back (arc::Telemetry::load (e.getTelemetry().nodeRadius[1]));
+        }
+        return radius;
+    };
+    const auto a = render (0.0);
+    const auto b = render (16.0); // 4 bars later: same position in the 4-cycle pattern
+    const auto c = render (2.0);  // half a bar later: different shape
+    double sameDiff = 0, otherDiff = 0, range = 0;
+    const auto [mn, mx] = std::minmax_element (a.begin(), a.end());
+    range = *mx - *mn;
+    // Skip the first 0.5 s (offset smoothing settles from rest).
+    for (size_t i = static_cast<size_t> (0.5 * kSr / kBlock); i < a.size(); ++i)
+    {
+        sameDiff = std::max (sameDiff, static_cast<double> (std::abs (a[i] - b[i])));
+        otherDiff = std::max (otherDiff, static_cast<double> (std::abs (a[i] - c[i])));
+    }
+    MEASURE ("radiusRange", range);
+    MEASURE ("maxDiff_sameBarPosition", sameDiff);
+    MEASURE ("maxDiff_halfBarLater", otherDiff);
+    CHECK (range > 0.05);
+    CHECK (sameDiff < 1.0e-3);
+    CHECK (otherDiff > 0.02);
+}
+
 TEST_CASE ("gesture", "gesture build, serialise and playback")
 {
     // A 1.3 s circular drag of node A.
@@ -259,6 +307,40 @@ TEST_CASE ("gesture", "gesture build, serialise and playback")
     }
     MEASURE ("playback.periodSeconds", bestLag);
     CHECK (std::abs (bestLag - 1.3) < 0.03);
+}
+
+TEST_CASE ("gesture", "a drag around the core becomes a seamless orbit")
+{
+    // One clockwise lap in 2 s, starting and ending at the top (angle wraps at +-pi).
+    std::vector<arc::GestureSample> raw;
+    for (int k = 0; k <= 200; ++k)
+    {
+        const double t = k * 0.01;
+        double a = 6.283185307 * t / 2.0; // 0 .. 2 pi
+        a -= 6.283185307 * std::floor ((a + 3.14159265) / 6.283185307);
+        raw.push_back ({ t, 0.6f, static_cast<float> (a) });
+    }
+    const auto g = arc::buildGesture (raw, 0.0, 4.0);
+    REQUIRE (g.valid);
+    // Sample finely across the whole cycle, including the wrap from the end to the
+    // start: every step must be small (no spin back), and the path covers a full turn.
+    double maxStep = 0, travelled = 0;
+    float prevR = 0, prevA = 0;
+    g.sample (0.0, prevR, prevA);
+    for (int i = 1; i <= 4000; ++i)
+    {
+        float r, a;
+        g.sample (i / 2000.0, r, a); // two cycles
+        const double step = std::abs (arc::wrapAngle (a - prevA));
+        maxStep = std::max (maxStep, step);
+        travelled += arc::wrapAngle (a - prevA);
+        prevA = a;
+        prevR = r;
+    }
+    MEASURE ("maxAngleStepPerSample_rad", maxStep);
+    MEASURE ("turnsOverTwoCycles", travelled / 6.283185307);
+    CHECK (maxStep < 0.02);
+    CHECK (std::abs (travelled / 6.283185307 - 2.0) < 0.05);
 }
 
 TEST_CASE ("gesture", "synced gesture follows host tempo")

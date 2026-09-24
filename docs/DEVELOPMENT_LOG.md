@@ -157,3 +157,55 @@ pitch ≤ 0.37 cents up to coupling 0.5; all 16 combos balanced at −22 dB RMS 
 * CPU profile: ~1 % of a core per voice at 48 kHz; 16 voices 16–18 % (48 kHz), 22–25 %
   (96 kHz). Finding: quality modes differ by < 1 % — not yet a meaningful trade-off.
 
+
+---
+
+## Phases 8–10 — Motion, chaos, FREEZE, presets, RANDOM, state (quality gate: PASS)
+
+**Phase 8 (motion / gestures / chaos / FREEZE)** — see MOTION_SYSTEM.md. MotionEngine
+(drift + gestures + SYNC), ChaosEngine (bounded, seeded), FREEZE epochs + energy governor,
+passive nonlinearities. Later refinements in this phase: gesture angles wrap and close
+modulo whole turns (a drag around the core becomes an orbit), 9-digit serialisation
+(exact float round trip — found by the bit-exact state test: 6 digits left a 2.8e-4
+difference after reload), synced drift phase-locked to the host timeline and purely
+periodic, motion offsets smoothed (40 ms).
+
+**Phases 9–10 (presets / RANDOM / state).** 46 factory presets in 12 categories
+(including all 25 names from the specification), `PresetManager` (factory + user XML
+presets, favourites, prev/next, modified detection, host programs), musical `RANDOM`
+(gentle mutation / SHIFT = regeneration from weighted, material-aware distributions,
+reseeds CHAOS), complete DAW state (parameters + gestures + seed + preset metadata +
+version). Preset tuning helper `radiusForRatio` places nodes exactly on harmonic ratios.
+
+**The factory-preset audit found four real engine defects** (render every preset,
+measure loudness / peak / tail / centroid / DC / distinctness):
+
+1. *Coupling-compensation limit cycle.* "Black Bell" held its level after release with
+   a 6.4 kHz centroid. Trace: node A 20 cents from unison with the CORE; the correction
+   iteration fell into a period-3 cycle (CORE loop 126 / 129 / 132 Hz) — audio-rate
+   loop FM pumping energy. Fix: static coincidence taper from intended frequencies,
+   width scaled by pair coupling (4th-order edge), under-relaxation 0.25, authority
+   ±12 %. Near-unison doublets now centre on the note (±3.4 cents). Regression test
+   fails all three checks on the old estimator. (NETWORK_COUPLING §6.1)
+2. *Non-collocated feedback forces.* BOW friction and the AIR column were also injected
+   into the outer nodes; a resting bow made METAL node B self-oscillate (−60 → −11 dB
+   in 0.8 s, "−13 dB of garbage, HNR −65 dB" in the playability map). Now only the
+   feed-forward turbulence spreads. (EXCITERS "Collocation")
+3. *Bow playability.* The stick width was absolute, so only pressure ≤ speed spoke
+   (Black Monolith: −42 dB). The stick region is now a fraction of the bow velocity:
+   every PRESSURE × SPEED speaks on every material, SPEED = amplitude (21 dB range),
+   PRESSURE = brightness (+45 % centroid), HNR 25–48 dB.
+4. *Wolf-tone limit.* AIR died at COUPLING ≥ 0.65 (CORE mode pulled > 12 %). Driven
+   voices soft-limit edge rotations (tanh knees 0.35 / 0.6 rad). Cathedral Air −41.4 →
+   −23.7 dB, Aurora Lattice −37.4 → −24.3 dB.
+5. Also: sounding voices read the *global* EXCITER for dispersion, CORE selectivity and
+   loudness normalisation, so switching EXCITER mid-note jumped their level (automation
+   step ratio 3.05 → 0.79). They now use their own exciter.
+
+Results: 46/46 presets finite, unclipped (worst peak −4.0 dBFS), no DC, momentary
+loudness −18.4 … −28.1 dB (Mercury String is a mono legato preset), closest spectral
+pair 2.2 dB apart; RANDOM: 24/24 regenerations speak, all four exciters and materials
+drawn; state round trip bit-identical; every parameter automated under a ringing chord
+without non-finite output (worst step ratio 2.96 = BRIGHTNESS brightening the tone);
+preset switching every 130 ms while notes sound: bounded, no voice resets.
+Full suite: 71 tests / 823 checks, all passing.

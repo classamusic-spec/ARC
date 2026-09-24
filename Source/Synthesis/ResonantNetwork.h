@@ -72,10 +72,22 @@ public:
         feedback exciters whose dynamics must see the broadband loop). */
     inline void writeInputs (const float* y, float excitation, const float* weights, bool rawCore) noexcept
     {
+        writeInputs (y, excitation, excitation, weights, rawCore);
+    }
+
+    /** As above with separate CORE and outer-node excitation. Feedback exciters (BOW
+        friction, the AIR column) compute their force from the CORE's own motion: applied
+        at the CORE it is a collocated (passive or intended negative) resistance, but the
+        same state-dependent force injected into other nodes is non-collocated feedback,
+        which is active (measured: a bow at rest made METAL node B self-oscillate). Such
+        exciters pass only their feed-forward part (turbulence) as `nodeExcitation`. */
+    inline void writeInputs (const float* y, float coreExcitation, float nodeExcitation, const float* weights,
+                             bool rawCore) noexcept
+    {
         float inj[kNumNodes];
         for (int i = 0; i < kNumNodes; ++i)
         {
-            const float e = excitation * weights[i];
+            const float e = (i == kCore ? coreExcitation : nodeExcitation) * weights[i];
             inj[i] = (i == kCore && rawCore) ? e : injectFilter[static_cast<size_t> (i)].process (e);
         }
         writeInputs (y, inj);

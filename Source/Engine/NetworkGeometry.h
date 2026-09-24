@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "Engine/EngineTypes.h"
+#include "Materials/MaterialEngine.h"
 #include "Synthesis/CouplingMatrix.h"
 
 namespace arc
@@ -45,6 +46,20 @@ inline float radiusToOctaves (float radius, bool quantise) noexcept
     if (quantise)
         o = std::round (o * 12.0f) / 12.0f;
     return o;
+}
+
+/** Inverse tuning map: the radius that puts node n (0..3) exactly on `ratio` x CORE for a
+    material at the given TENSION / INHARMONICITY (unquantised). May fall outside 0..1
+    when the ratio is out of the node's +-1 octave reach; callers clamp. */
+inline float radiusForRatio (MaterialType material, int node, float ratio, float tension, float inharmonicity) noexcept
+{
+    const auto& prof = materialProfile (material);
+    const auto u = static_cast<size_t> (node);
+    const float stretch = MaterialEngine::tensionExponent (tension, inharmonicity);
+    const double octaves = std::log2 (static_cast<double> (ratio))
+                           - static_cast<double> (stretch) * std::log2 (static_cast<double> (prof.nodeRatio[u]))
+                           - static_cast<double> (prof.nodeDetuneCents[u]) / 1200.0;
+    return static_cast<float> (0.5 + 0.5 * octaves);
 }
 
 /** Angle -> stereo position (-1..1). */
