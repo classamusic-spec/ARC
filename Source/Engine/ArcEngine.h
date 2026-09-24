@@ -9,9 +9,12 @@
 
 #include "Engine/ArcVoice.h"
 #include "Engine/EngineParams.h"
+#include "Engine/SpscQueue.h"
 #include "Engine/Telemetry.h"
 #include "FX/OutputStage.h"
 #include "Materials/MaterialEngine.h"
+#include "Motion/MotionEngine.h"
+#include "Nonlinear/ChaosEngine.h"
 
 namespace arc
 {
@@ -43,6 +46,13 @@ public:
     /** Writes (does not add) n samples of stereo output. */
     void render (float* left, float* right, int n) noexcept;
 
+    // --- gestures / seeds (message thread -> audio thread, lock-free) ------------------
+    /** Queue a gesture for node 0..3 (invalid gesture = clear). Safe from any one thread. */
+    bool postGesture (int node, const Gesture& g) noexcept;
+    /** Deterministic seed for chaos and motion (preset recall). */
+    void postSeed (uint32_t seed) noexcept;
+    const MotionEngine& getMotion() const noexcept { return motion; }
+
     Telemetry& getTelemetry() noexcept { return telemetry; }
     const EngineParams& getParameters() const noexcept { return params; }
     int activeVoiceCount() const noexcept;
@@ -64,6 +74,23 @@ private:
     bool isMpeMemberChannel (int channel) const noexcept { return params.mpe && channel >= 2 && channel <= 16; }
     void pushHeld (int channel, int note, float velocity) noexcept;
     void removeHeld (int channel, int note) noexcept;
+
+    struct GestureMessage
+    {
+        int node = 0;
+        Gesture gesture;
+    };
+    SpscQueue<GestureMessage, 8> gestureQueue;
+    std::atomic<uint32_t> pendingSeed { 0 };
+    std::atomic<bool> seedPending { false };
+    uint32_t currentSeed = 0xA2C1u;
+
+    MotionEngine motion;
+    ChaosEngine chaos;
+    int freezeEpoch = 0;
+    bool freezeWasOn = false;
+    std::array<NodeParams, 4> effectiveNodes {};
+    std::array<float, 4> effectiveAngle {};
 
     std::array<ArcVoice, kMaxVoices> voices;
     MaterialEngine material;

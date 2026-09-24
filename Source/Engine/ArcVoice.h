@@ -41,6 +41,10 @@ public:
     void release() noexcept;
     void beginSteal() noexcept;
 
+    /** FREEZE captures voices started before the engine's current freeze epoch. */
+    void setFreezeEpoch (int epoch) noexcept { freezeEpochAtStart = epoch; }
+    float getFreezeAmount() const noexcept { return voiceFreeze; }
+
     /** Per-note expression (MPE or poly aftertouch). */
     void setPressure (float p) noexcept { pressure = p; }
     void setNoteBend (float semitones) noexcept { noteBend = semitones; }
@@ -109,6 +113,18 @@ private:
     int silentBlocks = 0;
     float outputNorm = 1.0f;
     int samplesToControl = 0;
+
+    // FREEZE (per voice) and its energy governor.
+    int freezeEpochAtStart = -1;
+    float voiceFreeze = 0.0f;
+    bool governorCaptured = false;
+    int governorSettle = 0;
+    float governorReference = 0.0f;
+    float governorScale = 1.0f;
+
+    // CHAOS per-note static jitter (fixed for the note, scaled by CHAOS).
+    std::array<float, 4> unitJitter {};
+    float couplingSaturation = 1.0f;
     float pitchNote = 60.0f;      // gliding note (semitones)
     float glideCoeff = 0.0f;      // per control update
     float blockLevelAcc = 0.0f, blockExciterAcc = 0.0f;

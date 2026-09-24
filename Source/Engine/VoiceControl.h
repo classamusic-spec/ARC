@@ -34,6 +34,7 @@ struct VoiceControl
     std::array<float, 5> chaosDetuneCents {};        // CORE, A..D slow bounded random walks
     float chaos = 0.0f;
     float freeze = 0.0f;                             // 0..1 (smoothed)
+    int freezeEpoch = 0;                             // voices started before the epoch freeze
     float releaseDamping = 0.25f;                    // 0 = ring freely after note-off, 1 = damp fast
     int dispersionStages = 4;
     bool couplingCompensation = true;

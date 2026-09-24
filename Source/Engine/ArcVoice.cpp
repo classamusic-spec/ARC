@@ -77,6 +77,15 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
     timbre = 0.0f;
     pitchNote = static_cast<float> (newNote);
     glideCoeff = 0.0f;
+    {
+        Random jr;
+        jr.seed (seed ^ 0x5bd1e995u);
+        for (auto& j : unitJitter)
+            j = jr.bipolar();
+    }
+    governorCaptured = false;
+    governorScale = 1.0f;
+    voiceFreeze = 0.0f;
     samplesToControl = controlInterval;
     blockLevelAcc = blockExciterAcc = 0.0f;
     blockSamples = 0;
@@ -135,6 +144,7 @@ void ArcVoice::triggerExciter (const VoiceControl& ctl, uint32_t seed) noexcept
 
 void ArcVoice::restrike (float newVelocity, uint32_t seed, const VoiceControl& ctl) noexcept
 {
+    governorCaptured = false; // a frozen voice re-struck freezes its new energy
     velocity = newVelocity;
     state = State::active;
     gain = 1.0f;
@@ -204,8 +214,47 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
                                     : 1.0f;
     releaseT60Mult = immediate ? targetRelease : targetRelease + 0.85f * (releaseT60Mult - targetRelease);
     pluckDampMult = ctl.exciterType == ExciterType::pluck ? std::exp2 (-4.0f * ctl.exciter.pluckDamp) : 1.0f;
-    const float freezeMult = 1.0f + 1.0e4f * ctl.freeze * ctl.freeze;
-    const float decayCommon = releaseT60Mult * pluckDampMult * freezeMult;
+    // FREEZE: only voices that were sounding when it engaged are captured.
+    const float freezeTarget = freezeEpochAtStart < ctl.freezeEpoch ? ctl.freeze : 0.0f;
+    voiceFreeze = immediate ? freezeTarget : voiceFreeze + 0.25f * (freezeTarget - voiceFreeze);
+    const float freezeMult = 1.0f + 1.0e4f * voiceFreeze * voiceFreeze;
+
+    // Energy governor: a frozen network is (nearly) lossless, and time-varying delays
+    // can pump energy parametrically (measured in the network fuzz). Hold the energy
+    // captured at freeze time: extra damping above 1.15x the reference.
+    float energyTotal = 0.0f;
+    for (float e : smoothEnergy)
+        energyTotal += e;
+    if (voiceFreeze > 0.5f)
+    {
+        if (! governorCaptured)
+        {
+            if (++governorSettle > 16)
+            {
+                governorReference = std::max (energyTotal, 1.0e-12f);
+                governorCaptured = true;
+            }
+        }
+        else
+        {
+            const float ratio = energyTotal / governorReference;
+            const float target = ratio > 1.15f ? std::pow (1.15f / ratio, 4.0f) : 1.0f;
+            governorScale += 0.2f * (target - governorScale);
+        }
+    }
+    else
+    {
+        governorCaptured = false;
+        governorSettle = 0;
+        governorScale += 0.2f * (1.0f - governorScale);
+    }
+
+    // Passive nonlinearities, only at extreme network energy (normal playing sits well
+    // below the knees): dynamic damping (loss grows with energy) and coupling saturation.
+    const float dynamicDamping = 1.0f / (1.0f + std::max (0.0f, energyTotal - 1.0f));
+    couplingSaturation = 1.0f / (1.0f + std::max (0.0f, energyTotal - 0.5f) / 0.5f);
+
+    const float decayCommon = releaseT60Mult * pluckDampMult * freezeMult * governorScale * dynamicDamping;
     // MPE timbre (CC74 / slide) brightens or darkens this note's high-frequency decay.
     const float timbreHf = std::exp2 (2.0f * clamp (timbre, -1.0f, 1.0f));
 
@@ -216,7 +265,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     };
 
     // FREEZE removes every dissipative element: selectivity fades out with it.
-    const float selFreeze = 1.0f - clamp (ctl.freeze, 0.0f, 1.0f);
+    const float selFreeze = 1.0f - clamp (voiceFreeze, 0.0f, 1.0f);
     const double coreDispFactor = ctl.exciterType == ExciterType::bow ? 0.3 : 1.0;
 
     // Applies the coupling corrections of node i: pre-shift the loop so the coupled
@@ -271,8 +320,9 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     for (int i = 0; i < 4; ++i)
     {
         const auto u = static_cast<size_t> (i);
+        const double jitterCents = 40.0 * static_cast<double> (unitJitter[u]) * static_cast<double> (clamp (ctl.chaos, 0.0f, 1.0f));
         const double ratio = m.nodeRatio[u] * std::exp2 (static_cast<double> (ctl.nodeOffsetOctaves[u]))
-                             * std::exp2 ((m.nodeDetuneCents[u] + ctl.chaosDetuneCents[u + 1]) / 1200.0)
+                             * std::exp2 ((m.nodeDetuneCents[u] + ctl.chaosDetuneCents[u + 1] + jitterCents) / 1200.0)
                              * energyFactor (i + 1);
         const double f = clamp (f0 * ratio, kMinNodeFrequency, 0.45 * sr);
         const float ff = static_cast<float> (f);
@@ -290,7 +340,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     injectWeights[kCore] = 1.0f;
 
     for (int e = 0; e < kNumEdges; ++e)
-        settings.edgeTheta[static_cast<size_t> (e)] = ctl.edgeTheta[static_cast<size_t> (e)] * m.couplingScale;
+        settings.edgeTheta[static_cast<size_t> (e)] = ctl.edgeTheta[static_cast<size_t> (e)] * m.couplingScale * couplingSaturation;
 
     network.configure (settings, immediate);
 
@@ -397,11 +447,14 @@ void ArcVoice::renderSpan (float* outL, float* outR, int n) noexcept
     float lAcc = 0.0f, eAcc = 0.0f;
     const float norm = outputNorm;
     const bool rawCore = exciter.isSustained();
-    const bool trackPitch = rawCore && state == State::active;
+    const bool trackPitch = rawCore && state == State::active && voiceFreeze < 0.5f;
+    // A frozen voice holds its resonance; sustained drives are faded out ("block new
+    // excitation") so a lossless network is not fed forever.
+    const float drive = rawCore ? 1.0f - voiceFreeze : 1.0f;
     for (int s = 0; s < n; ++s)
     {
         network.readOutputs (y);
-        const float e = exciter.tick (y[kCore]);
+        const float e = exciter.tick (y[kCore]) * drive;
         network.writeInputs (y, e, injectWeights.data(), rawCore);
         if (trackPitch)
             trackIntonation (y[kCore]);
@@ -460,7 +513,7 @@ void ArcVoice::finishBlock (int n, const VoiceControl& ctl) noexcept
     }
 
     const bool excitationDone = ! exciter.isActive() && (state == State::released || ! exciter.isSustained());
-    if (excitationDone && blockLevel < kSilenceLevel && ctl.freeze < 0.5f)
+    if (excitationDone && blockLevel < kSilenceLevel && voiceFreeze < 0.5f)
     {
         if (++silentBlocks > 64)
             state = State::idle;

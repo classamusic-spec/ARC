@@ -40,8 +40,25 @@ void ArcEngine::reset()
     globalBendTarget = 0.0f;
     bendSmooth.reset (0.0f);
     freezeSmooth.reset (params.freeze ? 1.0f : 0.0f);
+    freezeWasOn = params.freeze;
+    motion.reset (currentSeed);
+    chaos.reset (currentSeed);
     controlCountdown = 0;
     updateGlobalControl();
+}
+
+bool ArcEngine::postGesture (int node, const Gesture& g) noexcept
+{
+    GestureMessage m;
+    m.node = node;
+    m.gesture = g;
+    return gestureQueue.push (m);
+}
+
+void ArcEngine::postSeed (uint32_t seed) noexcept
+{
+    pendingSeed.store (seed, std::memory_order_relaxed);
+    seedPending.store (true, std::memory_order_release);
 }
 
 void ArcEngine::setParameters (const EngineParams& p) noexcept
@@ -67,15 +84,38 @@ uint32_t ArcEngine::nextSeed() noexcept
 // -------------------------------------------------------------------------------------
 void ArcEngine::updateGlobalControl() noexcept
 {
+    const double dt = controlInterval / sampleRate;
+
+    // Messages from the message thread (lock-free).
+    if (seedPending.exchange (false, std::memory_order_acquire))
+    {
+        currentSeed = pendingSeed.load (std::memory_order_relaxed);
+        motion.reset (currentSeed);
+        chaos.reset (currentSeed);
+    }
+    GestureMessage msg;
+    while (gestureQueue.pop (msg))
+    {
+        if (msg.gesture.valid)
+            motion.setGesture (msg.node, msg.gesture);
+        else
+            motion.clearGesture (msg.node);
+    }
+
     material.update (params.materialMods, params.tension);
     control.material = material.effective();
+    motion.update (params, transport, dt);
+    chaos.update (params.chaos, dt);
 
+    // Effective node geometry = parameters + motion (drift + gesture), bounded.
     std::array<NodeParams, 4> nodes = params.nodes;
     std::array<FieldPoint, 4> pos {};
     for (int i = 0; i < 4; ++i)
     {
         const auto u = static_cast<size_t> (i);
-        const float angle = normToAngle (nodes[u].angle);
+        nodes[u].radius = clamp (nodes[u].radius + motion.radiusOffset (i), 0.0f, 1.0f);
+        const float angle = normToAngle (nodes[u].angle) + motion.angleOffset (i);
+        effectiveAngle[u] = angle;
         control.nodeOffsetOctaves[u] = radiusToOctaves (nodes[u].radius, params.quantise);
         control.nodePan[u] = angleToPan (angle);
         control.nodeDecayMult[u] = std::exp2 ((nodes[u].decay - 0.5f) * 4.0f);
@@ -83,21 +123,38 @@ void ArcEngine::updateGlobalControl() noexcept
         control.nodeLevel[u] = nodes[u].level;
         pos[u] = nodePosition (nodes[u].radius, angle);
     }
+    effectiveNodes = nodes;
+
+    // Coupling: topology + LINK + proximity, CHAOS strength variation and extra routing.
+    auto weights = edgeWeights (params.topology, nodes, pos);
+    const auto mask = topologyMask (params.topology);
     std::array<float, kNumEdges> chaosScale {};
-    chaosScale.fill (1.0f);
-    control.edgeTheta = edgeGenerators (params.coupling, edgeWeights (params.topology, nodes, pos), chaosScale);
+    for (int e = 0; e < kNumEdges; ++e)
+    {
+        const auto u = static_cast<size_t> (e);
+        chaosScale[u] = chaos.edgeScale (e);
+        if (mask[u] == 0.0f)
+            weights[u] += chaos.extraRouting (e);
+    }
+    control.edgeTheta = edgeGenerators (params.coupling, weights, chaosScale);
 
     control.exciterType = params.exciter;
     control.exciter = params.exciterParams;
     control.excite = params.excite;
     control.chaos = params.chaos;
-    control.chaosDetuneCents.fill (0.0f);
+    for (int i = 0; i < kNumNodes; ++i)
+        control.chaosDetuneCents[static_cast<size_t> (i)] = chaos.detuneCents (i);
     control.releaseDamping = params.releaseDamping;
     control.dispersionStages = params.quality == Quality::eco ? 2 : params.quality == Quality::high ? 6 : 4;
     control.couplingCompensation = true;
 
     bendSmooth.setTarget (globalBendTarget);
     control.bendSemitones = bendSmooth.next();
+    // FREEZE captures the voices sounding when it engages (new notes play normally).
+    if (params.freeze && ! freezeWasOn)
+        ++freezeEpoch;
+    freezeWasOn = params.freeze;
+    control.freezeEpoch = freezeEpoch;
     freezeSmooth.setTarget (params.freeze ? 1.0f : 0.0f);
     control.freeze = freezeSmooth.next();
 }
@@ -177,6 +234,7 @@ ArcVoice* ArcEngine::findVoiceForNewNote() noexcept
 void ArcEngine::startVoice (ArcVoice& v, int channel, int note, float velocity) noexcept
 {
     v.start (note, channel, velocity, nextSeed(), control);
+    v.setFreezeEpoch (params.freeze ? freezeEpoch : freezeEpoch - 1);
     v.setAge (voiceClock++);
     if (isMpeMemberChannel (channel))
     {
@@ -460,10 +518,11 @@ void ArcEngine::publishTelemetry (int n, double seconds) noexcept
     Telemetry::store (telemetry.networkActivity, clamp ((db + 80.0f) / 70.0f, 0.0f, 1.0f));
     Telemetry::store (telemetry.activeVoices, active);
     Telemetry::store (telemetry.freezeAmount, control.freeze);
+    Telemetry::store (telemetry.motionPhase, motion.displayPhase());
     for (size_t i = 0; i < 4; ++i)
     {
-        Telemetry::store (telemetry.nodeRadius[i], params.nodes[i].radius);
-        Telemetry::store (telemetry.nodeAngle[i], normToAngle (params.nodes[i].angle));
+        Telemetry::store (telemetry.nodeRadius[i], effectiveNodes[i].radius);
+        Telemetry::store (telemetry.nodeAngle[i], effectiveAngle[i]);
         Telemetry::store (telemetry.nodeRatio[i],
                           control.material.nodeRatio[i] * std::exp2 (control.nodeOffsetOctaves[i]));
     }
