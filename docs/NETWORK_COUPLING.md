@@ -101,3 +101,27 @@ Loop redesign is cached: a full redesign only when T60/dispersion change or the
 frequency drifts > 0.3 % from the cached design; otherwise a cheap retune (line length +
 allpass only). Under continuous drift at 48 kHz: 8.9 full designs/s and 15 k retunes/s
 per voice; the scattering matrix is recomputed only when a generator changes.
+
+## 6. Coupling compensation (added in the tuning phase)
+
+Coupling moves each loop's modes (mode repulsion). Voices pre-compensate every node
+using the **exact** reduction of the network onto that node (Schur complement over the
+other four loops, a 4×4 complex solve), evaluated at the frequency where the mode must
+land:
+
+```
+R_i(ω) = Q_ii + Q_io (I − D_o(ω) Q_oo)⁻¹ D_o(ω) Q_oi        D_o = diag(H_k(ω)), k ≠ i
+loop_i tuned to  f_i / (1 + arg R_i / 2π)       decay lengthened by 1/|R_i| (≤ 3×)
+```
+
+Validation: the bisection root of the exact characteristic equation det(I − D(ω)Q) = 0
+matches the measured spectral peak to 0.01 cents, and the compensated voices land on
+the note: worst 0.37 cents across GLASS/METAL/WOOD at coupling 0.2 / 0.35 / 0.5, where
+the uncompensated shifts are up to 4.4 / 31 / 97 cents.
+
+Two debugging lessons recorded in DEVELOPMENT_LOG: the coincidence taper must measure
+distance to a loop's nearest **non-DC** mode (short loops sit near their DC mode at any
+low frequency — this alone caused a 12 % under-correction), and the phase → frequency
+conversion is exactly `arg R / 2π` (dividing by ω·τ_group introduced a 1/(1+shift) error).
+Near a genuine coincidence (another loop resonant within ~0.07 rad of loop phase) the
+modes split symmetrically and the correction tapers to zero. Authority ±100 cents.

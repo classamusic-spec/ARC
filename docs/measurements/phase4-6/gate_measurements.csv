@@ -1,0 +1,260 @@
+exciters/strike is a transient impact,glass.earlyMinusLateDb,19.2879
+exciters/strike is a transient impact,metal.earlyMinusLateDb,11.3972
+exciters/strike is a transient impact,wood.earlyMinusLateDb,221.179
+exciters/strike is a transient impact,membrane.earlyMinusLateDb,221.34
+exciters/strike is a transient impact,centroid.soft,863.039
+exciters/strike is a transient impact,centroid.hard,2267.62
+exciters/strike is a transient impact,centroid.longContact,1624.24
+exciters/strike is a transient impact,centroid.shortContact,2838.73
+exciters/strike is a transient impact,rms.velocity0.3,0.0230475
+exciters/strike is a transient impact,rms.velocity1.0,0.101846
+exciters/strike is a transient impact,centroid.velocity0.3,1153.29
+exciters/strike is a transient impact,centroid.velocity1.0,1892.29
+exciters/pluck position comb,pos0.25.h3dB,37.5074
+exciters/pluck position comb,pos0.25.h4dB,-2.11257
+exciters/pluck position comb,pos0.25.h5dB,33.1267
+exciters/pluck position comb,pos0.25.h7dB,25.7855
+exciters/pluck position comb,pos0.25.h8dB,-5.0447
+exciters/pluck position comb,pos0.25.h9dB,20.9464
+exciters/pluck position comb,pos0.5.h1dB,46.8497
+exciters/pluck position comb,pos0.5.h2dB,4.65256
+exciters/pluck position comb,pos0.5.h3dB,40.5142
+exciters/pluck position comb,pos0.5.h4dB,-0.3699
+exciters/pluck position comb,centroid.tone0.1,482.849
+exciters/pluck position comb,centroid.tone0.95,1916.42
+exciters/bow is sustained friction not noise,glass.levelDriftDb,0.002357
+exciters/bow is sustained friction not noise,glass.hnrDb,38.7968
+exciters/bow is sustained friction not noise,glass.flatness,2.6762e-06
+exciters/bow is sustained friction not noise,glass.pitchCents,-0.00402762
+exciters/bow is sustained friction not noise,glass.releaseDropDb,70.9321
+exciters/bow is sustained friction not noise,metal.levelDriftDb,0.220134
+exciters/bow is sustained friction not noise,metal.hnrDb,17.9455
+exciters/bow is sustained friction not noise,metal.flatness,1.17573e-05
+exciters/bow is sustained friction not noise,metal.pitchCents,-0.0527012
+exciters/bow is sustained friction not noise,metal.releaseDropDb,36.5725
+exciters/bow is sustained friction not noise,wood.levelDriftDb,-0.000169722
+exciters/bow is sustained friction not noise,wood.hnrDb,47.0562
+exciters/bow is sustained friction not noise,wood.flatness,4.04842e-06
+exciters/bow is sustained friction not noise,wood.pitchCents,-0.00327487
+exciters/bow is sustained friction not noise,wood.releaseDropDb,217.461
+exciters/bow is sustained friction not noise,membrane.levelDriftDb,0.0170849
+exciters/bow is sustained friction not noise,membrane.hnrDb,44.8805
+exciters/bow is sustained friction not noise,membrane.flatness,1.1426e-06
+exciters/bow is sustained friction not noise,membrane.pitchCents,-0.000483688
+exciters/bow is sustained friction not noise,membrane.releaseDropDb,217.626
+exciters/bow is sustained friction not noise,wood.centroid.pressure0.1,578.449
+exciters/bow is sustained friction not noise,wood.centroid.pressure0.9,3442.43
+exciters/air is continuous turbulent excitation,glass.flatness.breathy,0.00297888
+exciters/air is continuous turbulent excitation,glass.flatness.tonal,1.91248e-06
+exciters/air is continuous turbulent excitation,glass.releaseDropDb,22.1929
+exciters/air is continuous turbulent excitation,metal.flatness.breathy,0.0102594
+exciters/air is continuous turbulent excitation,metal.flatness.tonal,5.2207e-06
+exciters/air is continuous turbulent excitation,metal.releaseDropDb,16.3804
+exciters/air is continuous turbulent excitation,wood.flatness.breathy,0.0274637
+exciters/air is continuous turbulent excitation,wood.flatness.tonal,1.38011e-05
+exciters/air is continuous turbulent excitation,wood.releaseDropDb,103.49
+exciters/air is continuous turbulent excitation,membrane.flatness.breathy,0.00694777
+exciters/air is continuous turbulent excitation,membrane.flatness.tonal,3.48474e-06
+exciters/air is continuous turbulent excitation,membrane.releaseDropDb,98.2837
+exciters/velocity and EXCITE act per exciter,strike.velocity0.2.rmsDb,-37.6698
+exciters/velocity and EXCITE act per exciter,strike.velocity0.5.rmsDb,-27.7209
+exciters/velocity and EXCITE act per exciter,strike.velocity0.8.rmsDb,-22.6788
+exciters/velocity and EXCITE act per exciter,strike.velocity1.0.rmsDb,-20.4314
+exciters/velocity and EXCITE act per exciter,strike.excite.levelGainDb,10.192
+exciters/velocity and EXCITE act per exciter,strike.excite.centroidRatio,1.71446
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.2.rmsDb,-36.596
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.5.rmsDb,-27.3295
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.8.rmsDb,-22.5724
+exciters/velocity and EXCITE act per exciter,pluck.velocity1.0.rmsDb,-20.3428
+exciters/velocity and EXCITE act per exciter,pluck.excite.levelGainDb,11.7555
+exciters/velocity and EXCITE act per exciter,pluck.excite.centroidRatio,1.71259
+exciters/velocity and EXCITE act per exciter,bow.velocity0.2.rmsDb,-25.0318
+exciters/velocity and EXCITE act per exciter,bow.velocity0.5.rmsDb,-23.3122
+exciters/velocity and EXCITE act per exciter,bow.velocity0.8.rmsDb,-22.0185
+exciters/velocity and EXCITE act per exciter,bow.velocity1.0.rmsDb,-21.3289
+exciters/velocity and EXCITE act per exciter,bow.excite.levelGainDb,9.81274
+exciters/velocity and EXCITE act per exciter,bow.excite.centroidRatio,0.214811
+exciters/velocity and EXCITE act per exciter,air.velocity0.2.rmsDb,-27.8761
+exciters/velocity and EXCITE act per exciter,air.velocity0.5.rmsDb,-26.4189
+exciters/velocity and EXCITE act per exciter,air.velocity0.8.rmsDb,-25.1841
+exciters/velocity and EXCITE act per exciter,air.velocity1.0.rmsDb,-24.4302
+exciters/velocity and EXCITE act per exciter,air.excite.levelGainDb,4.54127
+exciters/velocity and EXCITE act per exciter,air.excite.centroidRatio,0.990513
+materials/materials are measurably different,glass.t60_fundamental,5.15991
+materials/materials are measurably different,glass.centroidHz,1148.47
+materials/materials are measurably different,glass.inharmonicity,0.0597664
+materials/materials are measurably different,metal.t60_fundamental,8.24055
+materials/materials are measurably different,metal.centroidHz,1035.07
+materials/materials are measurably different,metal.inharmonicity,0.11097
+materials/materials are measurably different,wood.t60_fundamental,0.925083
+materials/materials are measurably different,wood.centroidHz,574.33
+materials/materials are measurably different,wood.inharmonicity,0.0338424
+materials/materials are measurably different,membrane.t60_fundamental,0.855536
+materials/materials are measurably different,membrane.centroidHz,417.334
+materials/materials are measurably different,membrane.inharmonicity,0.0968239
+materials/materials are measurably different,lsd.glass_vs_metal,26.7606
+materials/materials are measurably different,lsd.glass_vs_wood,29.225
+materials/materials are measurably different,lsd.glass_vs_membrane,42.706
+materials/materials are measurably different,lsd.metal_vs_wood,32.9841
+materials/materials are measurably different,lsd.metal_vs_membrane,32.7857
+materials/materials are measurably different,lsd.wood_vs_membrane,29.0116
+materials/materials differ for every exciter,strike.minPairwiseLsdDb,26.2896
+materials/materials differ for every exciter,pluck.minPairwiseLsdDb,23.9983
+materials/materials differ for every exciter,bow.minPairwiseLsdDb,3.49955
+materials/materials differ for every exciter,air.minPairwiseLsdDb,4.90612
+materials/material change is continuous,worstHfSpikeAboveNeighboursDb,3.93419
+materials/material change is continuous,glassModeAfterMorph_ratio,2.63466
+materials/inspector modifiers,loss0.2.dropDb_0.2to2.5s,7.41367
+materials/inspector modifiers,loss0.8.dropDb_0.2to2.5s,32.0904
+materials/inspector modifiers,brightness0.1.centroid,456.705
+materials/inspector modifiers,brightness0.9.centroid,1153.31
+materials/inspector modifiers,inharmonicity0.1.h4stretch,1.01563
+materials/inspector modifiers,inharmonicity0.9.h4stretch,1.05441
+materials/inspector modifiers,mass0.1.t60,6.30593
+materials/inspector modifiers,mass0.9.t60,12.3218
+soundcheck/exciter x material matrix,strike.glass.peak,0.276793
+soundcheck/exciter x material matrix,strike.glass.rmsAttack,0.0761749
+soundcheck/exciter x material matrix,strike.glass.rmsSustain,0.0118316
+soundcheck/exciter x material matrix,strike.glass.centroidHz,1148.47
+soundcheck/exciter x material matrix,strike.glass.t60,3.41731
+soundcheck/exciter x material matrix,strike.glass.fundamentalCents,0.161235
+soundcheck/exciter x material matrix,strike.glass.inharmonicity,0.293849
+soundcheck/exciter x material matrix,strike.metal.peak,0.260758
+soundcheck/exciter x material matrix,strike.metal.rmsAttack,0.0734617
+soundcheck/exciter x material matrix,strike.metal.rmsSustain,0.0238451
+soundcheck/exciter x material matrix,strike.metal.centroidHz,1035.07
+soundcheck/exciter x material matrix,strike.metal.t60,3.93386
+soundcheck/exciter x material matrix,strike.metal.fundamentalCents,0.26022
+soundcheck/exciter x material matrix,strike.metal.inharmonicity,0.0577236
+soundcheck/exciter x material matrix,strike.wood.peak,0.363712
+soundcheck/exciter x material matrix,strike.wood.rmsAttack,0.0747665
+soundcheck/exciter x material matrix,strike.wood.rmsSustain,7.0715e-06
+soundcheck/exciter x material matrix,strike.wood.centroidHz,574.33
+soundcheck/exciter x material matrix,strike.wood.t60,0.914119
+soundcheck/exciter x material matrix,strike.wood.fundamentalCents,0.509717
+soundcheck/exciter x material matrix,strike.wood.inharmonicity,0.137628
+soundcheck/exciter x material matrix,strike.membrane.peak,0.353847
+soundcheck/exciter x material matrix,strike.membrane.rmsAttack,0.075451
+soundcheck/exciter x material matrix,strike.membrane.rmsSustain,3.18818e-06
+soundcheck/exciter x material matrix,strike.membrane.centroidHz,417.334
+soundcheck/exciter x material matrix,strike.membrane.t60,0.839376
+soundcheck/exciter x material matrix,strike.membrane.fundamentalCents,4.457
+soundcheck/exciter x material matrix,strike.membrane.inharmonicity,0.387997
+soundcheck/exciter x material matrix,pluck.glass.peak,0.295322
+soundcheck/exciter x material matrix,pluck.glass.rmsAttack,0.0724
+soundcheck/exciter x material matrix,pluck.glass.rmsSustain,0.0107614
+soundcheck/exciter x material matrix,pluck.glass.centroidHz,3551.13
+soundcheck/exciter x material matrix,pluck.glass.t60,3.58603
+soundcheck/exciter x material matrix,pluck.glass.fundamentalCents,0.474148
+soundcheck/exciter x material matrix,pluck.glass.inharmonicity,0.0147484
+soundcheck/exciter x material matrix,pluck.metal.peak,0.306485
+soundcheck/exciter x material matrix,pluck.metal.rmsAttack,0.0743672
+soundcheck/exciter x material matrix,pluck.metal.rmsSustain,0.0221861
+soundcheck/exciter x material matrix,pluck.metal.centroidHz,1918.29
+soundcheck/exciter x material matrix,pluck.metal.t60,4.05405
+soundcheck/exciter x material matrix,pluck.metal.fundamentalCents,0.789014
+soundcheck/exciter x material matrix,pluck.metal.inharmonicity,0.0495841
+soundcheck/exciter x material matrix,pluck.wood.peak,0.397951
+soundcheck/exciter x material matrix,pluck.wood.rmsAttack,0.0777374
+soundcheck/exciter x material matrix,pluck.wood.rmsSustain,6.83825e-06
+soundcheck/exciter x material matrix,pluck.wood.centroidHz,736.336
+soundcheck/exciter x material matrix,pluck.wood.t60,0.905293
+soundcheck/exciter x material matrix,pluck.wood.fundamentalCents,1.28589
+soundcheck/exciter x material matrix,pluck.wood.inharmonicity,0.0149716
+soundcheck/exciter x material matrix,pluck.membrane.peak,0.549374
+soundcheck/exciter x material matrix,pluck.membrane.rmsAttack,0.0777349
+soundcheck/exciter x material matrix,pluck.membrane.rmsSustain,3.11855e-06
+soundcheck/exciter x material matrix,pluck.membrane.centroidHz,628.166
+soundcheck/exciter x material matrix,pluck.membrane.t60,0.835587
+soundcheck/exciter x material matrix,pluck.membrane.fundamentalCents,11.5778
+soundcheck/exciter x material matrix,pluck.membrane.inharmonicity,0.0805237
+soundcheck/exciter x material matrix,bow.glass.peak,0.118311
+soundcheck/exciter x material matrix,bow.glass.rmsAttack,0.0302919
+soundcheck/exciter x material matrix,bow.glass.rmsSustain,0.0794321
+soundcheck/exciter x material matrix,bow.glass.centroidHz,692.203
+soundcheck/exciter x material matrix,bow.glass.t60,0.118535
+soundcheck/exciter x material matrix,bow.glass.fundamentalCents,-0.0358476
+soundcheck/exciter x material matrix,bow.glass.inharmonicity,0.0691623
+soundcheck/exciter x material matrix,bow.metal.peak,0.196464
+soundcheck/exciter x material matrix,bow.metal.rmsAttack,0.0390544
+soundcheck/exciter x material matrix,bow.metal.rmsSustain,0.0814296
+soundcheck/exciter x material matrix,bow.metal.centroidHz,1029.97
+soundcheck/exciter x material matrix,bow.metal.t60,1.93899
+soundcheck/exciter x material matrix,bow.metal.fundamentalCents,-0.0349813
+soundcheck/exciter x material matrix,bow.metal.inharmonicity,3.0965e-06
+soundcheck/exciter x material matrix,bow.wood.peak,0.116179
+soundcheck/exciter x material matrix,bow.wood.rmsAttack,0.0281391
+soundcheck/exciter x material matrix,bow.wood.rmsSustain,0.077317
+soundcheck/exciter x material matrix,bow.wood.centroidHz,645.54
+soundcheck/exciter x material matrix,bow.wood.t60,0.0961486
+soundcheck/exciter x material matrix,bow.wood.fundamentalCents,-0.0170059
+soundcheck/exciter x material matrix,bow.wood.inharmonicity,1.45794e-06
+soundcheck/exciter x material matrix,bow.membrane.peak,0.112057
+soundcheck/exciter x material matrix,bow.membrane.rmsAttack,0.0246172
+soundcheck/exciter x material matrix,bow.membrane.rmsSustain,0.0782802
+soundcheck/exciter x material matrix,bow.membrane.centroidHz,480.004
+soundcheck/exciter x material matrix,bow.membrane.t60,0.0968601
+soundcheck/exciter x material matrix,bow.membrane.fundamentalCents,0.314267
+soundcheck/exciter x material matrix,bow.membrane.inharmonicity,2.62878e-06
+soundcheck/exciter x material matrix,air.glass.peak,0.119979
+soundcheck/exciter x material matrix,air.glass.rmsAttack,0.00770484
+soundcheck/exciter x material matrix,air.glass.rmsSustain,0.0797472
+soundcheck/exciter x material matrix,air.glass.centroidHz,4673.98
+soundcheck/exciter x material matrix,air.glass.t60,2.04639
+soundcheck/exciter x material matrix,air.glass.fundamentalCents,-0.206519
+soundcheck/exciter x material matrix,air.glass.inharmonicity,0.899776
+soundcheck/exciter x material matrix,air.metal.peak,0.101978
+soundcheck/exciter x material matrix,air.metal.rmsAttack,0.0057967
+soundcheck/exciter x material matrix,air.metal.rmsSustain,0.0680356
+soundcheck/exciter x material matrix,air.metal.centroidHz,5799.63
+soundcheck/exciter x material matrix,air.metal.t60,2.80486
+soundcheck/exciter x material matrix,air.metal.fundamentalCents,-0.589068
+soundcheck/exciter x material matrix,air.metal.inharmonicity,0.34463
+soundcheck/exciter x material matrix,air.wood.peak,0.11691
+soundcheck/exciter x material matrix,air.wood.rmsAttack,0.0109345
+soundcheck/exciter x material matrix,air.wood.rmsSustain,0.0758943
+soundcheck/exciter x material matrix,air.wood.centroidHz,3733.98
+soundcheck/exciter x material matrix,air.wood.t60,0.446584
+soundcheck/exciter x material matrix,air.wood.fundamentalCents,-0.111746
+soundcheck/exciter x material matrix,air.wood.inharmonicity,0.14183
+soundcheck/exciter x material matrix,air.membrane.peak,0.119852
+soundcheck/exciter x material matrix,air.membrane.rmsAttack,0.00840095
+soundcheck/exciter x material matrix,air.membrane.rmsSustain,0.0795411
+soundcheck/exciter x material matrix,air.membrane.centroidHz,2960.19
+soundcheck/exciter x material matrix,air.membrane.t60,0.484339
+soundcheck/exciter x material matrix,air.membrane.fundamentalCents,5.93505
+soundcheck/exciter x material matrix,air.membrane.inharmonicity,0.376945
+tuning/tension is not master pitch,worstFundamentalCents_T0.2_0.8,0.270583
+tuning/tension is not master pitch,worstFundamentalCents_T0_or_1,8.2886
+tuning/tension stretches the modal spacing,tension0.1.nodeA_ratio,1.11406
+tuning/tension stretches the modal spacing,tension0.3.nodeA_ratio,1.14951
+tuning/tension stretches the modal spacing,tension0.5.nodeA_ratio,1.18608
+tuning/tension stretches the modal spacing,tension0.7.nodeA_ratio,1.22382
+tuning/tension stretches the modal spacing,tension0.9.nodeA_ratio,1.26276
+tuning/pitch tracks MIDI C1-C6,worstCents_C1_C6,0.586361
+tuning/membrane pitch glide settles,membrane.early_cents,7.44073
+tuning/membrane pitch glide settles,membrane.settled_cents,0.123787
+tuning/chromatic intervals,worstCents_C3_C5_pluckWood,0.190041
+tuning/node radius and quantise,radius1.00.ratio,2.37234
+tuning/node radius and quantise,radius0.00.ratio,0.593001
+tuning/node radius and quantise,radius0.75.ratio,1.67741
+tuning/node radius and quantise,radius0.54q.ratio,1.2566
+tuning/node radius and quantise,radius0.46q.ratio,1.11949
+tuning/coupling compensation keeps pitch,glass.coupling0.20.uncompensatedCents,4.4255
+tuning/coupling compensation keeps pitch,glass.coupling0.20.compensatedCents,0.0932072
+tuning/coupling compensation keeps pitch,glass.coupling0.35.uncompensatedCents,25.8854
+tuning/coupling compensation keeps pitch,glass.coupling0.35.compensatedCents,0.100377
+tuning/coupling compensation keeps pitch,glass.coupling0.50.uncompensatedCents,79.2337
+tuning/coupling compensation keeps pitch,glass.coupling0.50.compensatedCents,0.129649
+tuning/coupling compensation keeps pitch,metal.coupling0.20.uncompensatedCents,-2.45561
+tuning/coupling compensation keeps pitch,metal.coupling0.20.compensatedCents,0.365108
+tuning/coupling compensation keeps pitch,metal.coupling0.35.uncompensatedCents,-15.6777
+tuning/coupling compensation keeps pitch,metal.coupling0.35.compensatedCents,0.203873
+tuning/coupling compensation keeps pitch,metal.coupling0.50.uncompensatedCents,-44.8059
+tuning/coupling compensation keeps pitch,metal.coupling0.50.compensatedCents,-0.106426
+tuning/coupling compensation keeps pitch,wood.coupling0.20.uncompensatedCents,4.73605
+tuning/coupling compensation keeps pitch,wood.coupling0.20.compensatedCents,0.0259275
+tuning/coupling compensation keeps pitch,wood.coupling0.35.uncompensatedCents,28.2858
+tuning/coupling compensation keeps pitch,wood.coupling0.35.compensatedCents,0.0375236
+tuning/coupling compensation keeps pitch,wood.coupling0.50.uncompensatedCents,88.4006
+tuning/coupling compensation keeps pitch,wood.coupling0.50.compensatedCents,0.0634788

@@ -28,6 +28,8 @@ struct NodeSettings
     double hfReference = 5000.0;
     double dispersion = 0.0;
     int dispersionStages = 4;
+    double selectivity = 0.0;     // modal selectivity of this node's excitation and pickup
+    double loopSelectivity = 0.0; // in-loop selectivity (CORE under sustained exciters)
     float outputGain = 1.0f;
     float pan = 0.0f; // -1 (left) .. +1 (right)
 };
@@ -65,7 +67,21 @@ public:
         ++energyCount;
     }
 
-    /** Scatters y through Q and writes loop inputs (+ per-node injection). */
+    /** Scatters y through Q and writes loop inputs; a mono excitation enters each node
+        through its modal selectivity filter (the CORE unfiltered when `rawCore`, for
+        feedback exciters whose dynamics must see the broadband loop). */
+    inline void writeInputs (const float* y, float excitation, const float* weights, bool rawCore) noexcept
+    {
+        float inj[kNumNodes];
+        for (int i = 0; i < kNumNodes; ++i)
+        {
+            const float e = excitation * weights[i];
+            inj[i] = (i == kCore && rawCore) ? e : injectFilter[static_cast<size_t> (i)].process (e);
+        }
+        writeInputs (y, inj);
+    }
+
+    /** Scatters y through Q and writes loop inputs (+ raw per-node injection). */
     inline void writeInputs (const float* y, const float* injection) noexcept
     {
         if (rampRemaining > 0)
@@ -88,14 +104,15 @@ public:
         }
     }
 
-    /** Stereo pickup of the loop outputs. */
-    inline void pickup (const float* y, float& left, float& right) const noexcept
+    /** Stereo pickup of the loop outputs through each node's modal selectivity filter. */
+    inline void pickup (const float* y, float& left, float& right) noexcept
     {
         float l = 0.0f, r = 0.0f;
         for (int i = 0; i < kNumNodes; ++i)
         {
-            l += gainL[static_cast<size_t> (i)] * y[i];
-            r += gainR[static_cast<size_t> (i)] * y[i];
+            const float v = pickupFilter[static_cast<size_t> (i)].process (y[i]);
+            l += gainL[static_cast<size_t> (i)] * v;
+            r += gainR[static_cast<size_t> (i)] * v;
         }
         left = l;
         right = r;
@@ -111,6 +128,27 @@ public:
     std::array<float, kNumEdges> edgeFlux (const std::array<float, kNumNodes>& nodeEnergy) const noexcept;
     /** Approximate stored energy (sum of squares of the active delay-line contents). */
     double storedEnergy() const noexcept;
+
+    /** Coupling side-effects on each loop's fundamental mode, from a first-order
+        perturbation of det(I - H(z) Q) around that mode:
+            R_i = Q_ii + sum_k Q_ik Q_ki H_k(w_i) / (1 - Q_kk H_k(w_i))
+        arg(R_i) / 2pi is the relative frequency shift, |R_i| the extra per-pass gain.
+        Voices pre-compensate both so COUPLING moves energy without detuning the
+        network or shortening the material's decay (see NETWORK_COUPLING.md). */
+    struct ModeCorrection
+    {
+        double frequencyShift = 0.0; // relative (f_actual = f_loop * (1 + shift))
+        double gainFactor = 1.0;     // per-pass gain multiplier caused by coupling
+    };
+    /** modeFrequency: where each mode should end up (Hz); <= 0 uses the loop tuning. */
+    std::array<ModeCorrection, kNumNodes> estimateModeCorrections (const std::array<double, kNumNodes>& modeFrequency) const noexcept;
+    std::array<ModeCorrection, kNumNodes> estimateModeCorrections() const noexcept
+    {
+        return estimateModeCorrections ({});
+    }
+
+    /** CORE-only convenience (frequency shift). */
+    double estimateCoreDetune (double coreFrequency) const noexcept;
 
     const Matrix5& currentMatrix() const noexcept { return q; }
     const Matrix5& targetMatrix() const noexcept { return qTarget; }
@@ -134,6 +172,7 @@ private:
 
     std::array<WaveguideResonator, kNumNodes> loops;
     std::array<DesignCache, kNumNodes> cache;
+    std::array<SelectivityStage, kNumNodes> injectFilter, pickupFilter;
     Matrix5 q {}, qTarget {}, dq {};
     std::array<float, kNumNodes> gainL {}, gainR {}, dGainL {}, dGainR {};
     std::array<float, kNumEdges> lastTheta {};

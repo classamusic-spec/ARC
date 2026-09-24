@@ -394,6 +394,37 @@ double inharmonicity (const Spectrum& s, double f1, int K)
     return n > 0 ? acc / n : 0.0;
 }
 
+double harmonicToNoiseDb (const Spectrum& s, double f0, int K)
+{
+    double harm = 0, rest = 0;
+    const int lo = static_cast<int> (0.5 * f0 / s.binHz), hi = static_cast<int> ((K + 0.5) * f0 / s.binHz);
+    for (int i = std::max (1, lo); i <= std::min (hi, static_cast<int> (s.mag.size()) - 1); ++i)
+    {
+        const double f = i * s.binHz;
+        const double k = std::round (f / f0);
+        const double p = s.mag[static_cast<size_t> (i)] * s.mag[static_cast<size_t> (i)];
+        if (k >= 1 && std::abs (f - k * f0) <= 0.03 * k * f0)
+            harm += p;
+        else
+            rest += p;
+    }
+    return 10.0 * std::log10 ((harm + 1e-30) / (rest + 1e-30));
+}
+
+double spectralFlatness (const Spectrum& s, double fLo, double fHi)
+{
+    double logSum = 0, sum = 0;
+    int n = 0;
+    for (int i = std::max (1, static_cast<int> (fLo / s.binHz)); i <= std::min (static_cast<int> (fHi / s.binHz), static_cast<int> (s.mag.size()) - 1); ++i)
+    {
+        const double p = s.mag[static_cast<size_t> (i)] * s.mag[static_cast<size_t> (i)] + 1e-30;
+        logSum += std::log (p);
+        sum += p;
+        ++n;
+    }
+    return n > 0 ? std::exp (logSum / n) / (sum / n) : 0.0;
+}
+
 void writeWav (const std::string& path, const Signal& left, const Signal& right, double sampleRate)
 {
     juce::File file (path);

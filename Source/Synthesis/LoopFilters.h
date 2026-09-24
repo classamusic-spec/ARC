@@ -149,6 +149,71 @@ struct AllpassChain
     }
 };
 
+/** Modal selectivity stage for banded loops:  S(z) = (1 - s) + s * BP(z)
+    where BP is the constant-0dB-peak bandpass (RBJ) centred on the loop's fundamental.
+    |BP| <= 1 and BP(w0) = 1 (real), hence |S| <= 1 everywhere, S(w0) = 1 with zero
+    phase (tuning at f0 unaffected), S(0) = 1 - s (DC and sub-modes damped), and the
+    loop's own overtones are attenuated by ~(1 - s) per pass. s = 0 is a bypass. */
+struct SelectivityStage
+{
+    float s = 0.0f;
+    float b0 = 0.0f, a1 = 0.0f, a2 = 0.0f; // BP: b0 (1 - z^-2) / (1 + a1 z^-1 + a2 z^-2)
+    float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
+
+    struct Coeffs
+    {
+        float s, b0, a1, a2;
+    };
+
+    static Coeffs design (double w0, double q, double selectivity) noexcept
+    {
+        Coeffs c {};
+        c.s = static_cast<float> (clamp (selectivity, 0.0, 0.98));
+        w0 = clamp (w0, 1.0e-4, kPi * 0.98);
+        const double alpha = std::sin (w0) / (2.0 * q);
+        const double a0 = 1.0 + alpha;
+        c.b0 = static_cast<float> (alpha / a0);
+        c.a1 = static_cast<float> (-2.0 * std::cos (w0) / a0);
+        c.a2 = static_cast<float> ((1.0 - alpha) / a0);
+        return c;
+    }
+
+    void set (const Coeffs& c) noexcept
+    {
+        s = c.s;
+        b0 = c.b0;
+        a1 = c.a1;
+        a2 = c.a2;
+    }
+
+    inline float process (float x) noexcept
+    {
+        if (s <= 0.0f)
+            return x;
+        const float bp = b0 * (x - x2) - a1 * y1 - a2 * y2;
+        x2 = x1;
+        x1 = x;
+        y2 = y1;
+        y1 = bp;
+        return x + s * (bp - x);
+    }
+
+    void reset() noexcept { x1 = x2 = y1 = y2 = 0.0f; }
+
+    /** Complex response at w (for analysis / coupling compensation). */
+    static void response (const Coeffs& c, double w, double& re, double& im) noexcept
+    {
+        // BP(e^jw) = b0 (1 - e^-2jw) / (1 + a1 e^-jw + a2 e^-2jw)
+        const double nr = c.b0 * (1.0 - std::cos (2.0 * w)), ni = c.b0 * std::sin (2.0 * w);
+        const double dr = 1.0 + c.a1 * std::cos (w) + c.a2 * std::cos (2.0 * w);
+        const double di = -c.a1 * std::sin (w) - c.a2 * std::sin (2.0 * w);
+        const double den = dr * dr + di * di;
+        const double br = (nr * dr + ni * di) / den, bi = (ni * dr - nr * di) / den;
+        re = (1.0 - c.s) + c.s * br;
+        im = c.s * bi;
+    }
+};
+
 /** Normalised DC blocker (|H| <= 1 everywhere):  H = (1+R)/2 * (1 - z^-1) / (1 - R z^-1). */
 struct DcBlocker
 {

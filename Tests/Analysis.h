@@ -76,6 +76,13 @@ std::vector<double> trackPartials (const Spectrum& s, double f1, int K);
 /** Mean |f_k / (k f_1) - 1| over tracked partials k = 2..K. */
 double inharmonicity (const Spectrum& s, double f1, int K);
 
+/** Energy within +-3 % of harmonics k*f0 (k = 1..K) relative to the rest of the band
+    [0.5 f0, (K + 0.5) f0], in dB. High for periodic tones, ~0 dB or below for noise. */
+double harmonicToNoiseDb (const Spectrum& s, double f0, int K = 16);
+
+/** Spectral flatness (geometric / arithmetic mean of power) in [fLo, fHi]. */
+double spectralFlatness (const Spectrum& s, double fLo, double fHi);
+
 void writeWav (const std::string& path, const Signal& left, const Signal& right, double sampleRate);
 void writeWav (const std::string& path, const Signal& mono, double sampleRate);
 

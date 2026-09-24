@@ -33,8 +33,12 @@ struct ResonatorSettings
     double hfReference = 5000.0;    // Hz
     double dispersion = 0.0;        // 0..0.6, fraction of period (see AllpassChain)
     int dispersionStages = 4;
+    double loopSelectivity = 0.0;   // in-loop modal selectivity (dissipative off-resonance;
+                                    // used only where a sustained drive feeds the loop)
     Interpolation interpolation = Interpolation::thiran1;
 };
+
+inline constexpr double kSelectivityQ = 3.0;
 
 /** Coefficients computed at control rate; applied to the loop per sample. */
 struct LoopCoefficients
@@ -48,12 +52,17 @@ struct LoopCoefficients
     double totalDelay = 0.0;     // intended loop delay fs / f0
     double lossDelay = 0.0;      // phase delay of the loss filter at f0
     double dispersionDelay = 0.0;// phase delay of the dispersion chain at f0
+    SelectivityStage::Coeffs selectivity {}; // zero phase at f0 (no tuning term)
 };
+
+/** Response of the loop's filters (fractional allpass, loss, dispersion) including
+    the integer line delay, at w: magnitude and total phase delay in samples. */
+void loopResponse (const LoopCoefficients& c, double w, double& magnitude, double& phaseDelaySamples) noexcept;
 
 /** Computes loop coefficients (control rate, allocation free).
     preferredK: integer tap of the previous design (-1 = none) for hysteresis. */
 LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int maxLineDelay,
-                             int preferredK = -1) noexcept;
+                             int preferredK = -1, int lockedStages = -1) noexcept;
 
 /** Cheap re-tune for small frequency changes: keeps the loss and dispersion
     coefficients (and their phase delays) of `base`, recomputes only the line delay
@@ -91,11 +100,14 @@ public:
         {
             current.a += rampA;
             current.f += rampF;
+            lossB0 += rampB0;
+            lossA1 += rampA1;
+            dispersion.a += rampDisp;
             --rampRemaining;
         }
         float y = readInterpolated (line, current, interpolation, thiranState);
-        lossState = coeffs.lossB0 * y + coeffs.lossA1 * lossState;
-        return dispersion.process (lossState);
+        lossState = lossB0 * y + lossA1 * lossState;
+        return dispersion.process (selectivity.process (lossState));
     }
 
     /** Loop input for this sample. */
@@ -129,10 +141,12 @@ private:
     LoopCoefficients coeffs;
     FractionalDelaySetting current;
     AllpassChain<kMaxDispersionStages> dispersion;
+    SelectivityStage selectivity;
     Interpolation interpolation = Interpolation::thiran1;
     float thiranState = 0.0f;
     float lossState = 0.0f;
-    float rampA = 0.0f, rampF = 0.0f;
+    float rampA = 0.0f, rampF = 0.0f, rampB0 = 0.0f, rampA1 = 0.0f, rampDisp = 0.0f;
+    float lossB0 = 0.99f, lossA1 = 0.0f; // live (ramped) loss coefficients
     int rampRemaining = 0;
     bool hasCoeffs = false;
     double sampleRate = 48000.0;

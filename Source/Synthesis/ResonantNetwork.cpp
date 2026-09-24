@@ -1,5 +1,7 @@
 #include "Synthesis/ResonantNetwork.h"
 
+#include <complex>
+
 namespace arc::dsp
 {
 
@@ -28,6 +30,10 @@ void ResonantNetwork::reset() noexcept
 {
     for (auto& l : loops)
         l.reset();
+    for (auto& f : injectFilter)
+        f.reset();
+    for (auto& f : pickupFilter)
+        f.reset();
     energyAcc.fill (0.0f);
     energyCount = 0;
 }
@@ -36,6 +42,10 @@ void ResonantNetwork::clearState() noexcept
 {
     for (auto& l : loops)
         l.clearState();
+    for (auto& f : injectFilter)
+        f.reset();
+    for (auto& f : pickupFilter)
+        f.reset();
     energyAcc.fill (0.0f);
     energyCount = 0;
 }
@@ -52,6 +62,7 @@ void ResonantNetwork::updateLoop (int i, const NodeSettings& ns, bool immediate)
     rs.hfReference = ns.hfReference;
     rs.dispersion = ns.dispersion;
     rs.dispersionStages = ns.dispersionStages;
+    rs.loopSelectivity = ns.loopSelectivity;
     rs.interpolation = Interpolation::thiran1;
 
     const int preferredK = loop.hasCoefficients() ? loop.currentIntegerDelay() : -1;
@@ -62,10 +73,13 @@ void ResonantNetwork::updateLoop (int i, const NodeSettings& ns, bool immediate)
                           || relDiff (rs.hfReference, c.settings.hfReference) > 1.0e-3
                           || std::abs (rs.dispersion - c.settings.dispersion) > 1.0e-4
                           || rs.dispersionStages != c.settings.dispersionStages
+                          || std::abs (rs.loopSelectivity - c.settings.loopSelectivity) > 1.0e-3
                           || relDiff (rs.frequency, c.settings.frequency) > 0.003;
     if (needFull)
     {
-        c.coeffs = designLoop (rs, sampleRate, loop.maxLineDelay(), preferredK);
+        // Stage count is chosen at note start (immediate) and locked afterwards.
+        const int locked = (immediate || ! c.valid) ? -1 : c.coeffs.dispStages;
+        c.coeffs = designLoop (rs, sampleRate, loop.maxLineDelay(), preferredK, locked);
         c.settings = rs;
         c.valid = true;
         loop.setCoefficients (c.coeffs, ramp);
@@ -89,7 +103,14 @@ void ResonantNetwork::updateLoop (int i, const NodeSettings& ns, bool immediate)
 void ResonantNetwork::configure (const NetworkSettings& settings, bool immediate) noexcept
 {
     for (int i = 0; i < kNumNodes; ++i)
-        updateLoop (i, settings.nodes[static_cast<size_t> (i)], immediate);
+    {
+        const auto& ns = settings.nodes[static_cast<size_t> (i)];
+        updateLoop (i, ns, immediate);
+        const auto sel = SelectivityStage::design (kTwoPi * clamp (ns.frequency, 1.0, 0.45 * sampleRate) / sampleRate,
+                                                   kSelectivityQ, ns.selectivity);
+        injectFilter[static_cast<size_t> (i)].set (sel);
+        pickupFilter[static_cast<size_t> (i)].set (sel);
+    }
 
     // Scattering matrix: recompute only when the generator changed.
     bool thetaChanged = ! hasMatrix;
@@ -178,6 +199,115 @@ std::array<float, kNumEdges> ResonantNetwork::edgeFlux (const std::array<float, 
         flux[static_cast<size_t> (k)] = s * s * (e[static_cast<size_t> (edge.a)] + e[static_cast<size_t> (edge.b)]);
     }
     return flux;
+}
+
+std::array<ResonantNetwork::ModeCorrection, kNumNodes>
+    ResonantNetwork::estimateModeCorrections (const std::array<double, kNumNodes>& modeFrequency) const noexcept
+{
+    using cd = std::complex<double>;
+    std::array<ModeCorrection, kNumNodes> out {};
+    if (! hasMatrix)
+        return out;
+
+    for (int i = 0; i < kNumNodes; ++i)
+    {
+        const auto& ci = loops[static_cast<size_t> (i)].getCoefficients();
+        if (ci.totalDelay <= 0.0)
+            continue;
+        // Evaluate where the coupled mode must land: the mode condition
+        // H_i(w) R_i(w) = 1 is imposed there, not at the loop's own tuning.
+        const double fm = modeFrequency[static_cast<size_t> (i)];
+        const double wi = fm > 0.0 ? kTwoPi * std::min (fm, 0.45 * sampleRate) / sampleRate : kTwoPi / ci.totalDelay;
+
+        // Exact reduction onto loop i (Schur complement over the other four loops):
+        //   R_i = Q_ii + Q_io (I - D_o Q_oo)^-1 D_o Q_oi,   D_o = diag(H_k(w_i))
+        int idx[kNumNodes - 1];
+        for (int k = 0, m = 0; k < kNumNodes; ++k)
+            if (k != i)
+                idx[m++] = k;
+
+        cd h[kNumNodes - 1];
+        double minResDistance = 1.0e9;
+        for (int m = 0; m < kNumNodes - 1; ++m)
+        {
+            double mag, d;
+            loopResponse (loops[static_cast<size_t> (idx[m])].getCoefficients(), wi, mag, d);
+            h[m] = std::polar (mag, -wi * d);
+            // Phase distance to loop k's nearest resonance *excluding its DC mode*
+            // (short loops sit close to their DC mode at any low frequency; that is
+            // not a coincidence and must not taper the correction).
+            const double phase = wi * d;
+            const double harmonic = std::max (1.0, std::round (phase / kTwoPi));
+            const double dphi = phase - kTwoPi * harmonic;
+            minResDistance = std::min (minResDistance, dphi * dphi);
+        }
+
+        cd a[kNumNodes - 1][kNumNodes - 1], x[kNumNodes - 1];
+        for (int r = 0; r < kNumNodes - 1; ++r)
+        {
+            for (int c = 0; c < kNumNodes - 1; ++c)
+                a[r][c] = (r == c ? 1.0 : 0.0)
+                          - h[r] * static_cast<double> (qTarget[static_cast<size_t> (idx[r])][static_cast<size_t> (idx[c])]);
+            x[r] = h[r] * static_cast<double> (qTarget[static_cast<size_t> (idx[r])][static_cast<size_t> (i)]);
+        }
+        // Gaussian elimination with partial pivoting (4x4 complex).
+        bool singular = false;
+        for (int k = 0; k < kNumNodes - 1 && ! singular; ++k)
+        {
+            int piv = k;
+            for (int r = k + 1; r < kNumNodes - 1; ++r)
+                if (std::abs (a[r][k]) > std::abs (a[piv][k]))
+                    piv = r;
+            if (std::abs (a[piv][k]) < 1.0e-12)
+            {
+                singular = true;
+                break;
+            }
+            if (piv != k)
+            {
+                for (int c = 0; c < kNumNodes - 1; ++c)
+                    std::swap (a[k][c], a[piv][c]);
+                std::swap (x[k], x[piv]);
+            }
+            for (int r = k + 1; r < kNumNodes - 1; ++r)
+            {
+                const cd f = a[r][k] / a[k][k];
+                for (int c = k; c < kNumNodes - 1; ++c)
+                    a[r][c] -= f * a[k][c];
+                x[r] -= f * x[k];
+            }
+        }
+        if (singular)
+            continue;
+        for (int r = kNumNodes - 2; r >= 0; --r)
+        {
+            cd v = x[r];
+            for (int c = r + 1; c < kNumNodes - 1; ++c)
+                v -= a[r][c] * x[c];
+            x[r] = v / a[r][r];
+        }
+        cd rr (qTarget[static_cast<size_t> (i)][static_cast<size_t> (i)], 0.0);
+        for (int m = 0; m < kNumNodes - 1; ++m)
+            rr += static_cast<double> (qTarget[static_cast<size_t> (i)][static_cast<size_t> (idx[m])]) * x[m];
+
+        // Near a coincidence (another loop resonant at w_i) the modes split
+        // symmetrically (avoided crossing): the "shift" is not a tuning error, so the
+        // correction is tapered off there.
+        // Mode condition at the intended frequency w: the loop must provide phase
+        // 2 pi + arg(R) there, i.e. a loop tuned to f / (1 + arg(R) / 2 pi) (exact for a
+        // loop whose phase delay is flat between its tuning and w, as at the fundamental).
+        // Only a genuine coincidence (within ~0.07 rad of loop phase) tapers.
+        const double taper = minResDistance / (minResDistance + 0.005);
+        out[static_cast<size_t> (i)].frequencyShift = clamp (taper * std::arg (rr) / kTwoPi, -0.059, 0.059);
+        out[static_cast<size_t> (i)].gainFactor = clamp (1.0 + taper * (std::abs (rr) - 1.0), 0.2, 1.0);
+    }
+    return out;
+}
+
+double ResonantNetwork::estimateCoreDetune (double coreFrequency) const noexcept
+{
+    (void) coreFrequency;
+    return estimateModeCorrections()[0].frequencyShift;
 }
 
 double ResonantNetwork::storedEnergy() const noexcept

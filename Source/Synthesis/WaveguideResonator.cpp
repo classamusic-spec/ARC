@@ -40,7 +40,8 @@ FractionalDelaySetting designAllpassDelay (double line, double w0, int preferred
 }
 } // namespace
 
-LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int maxLineDelay, int preferredK) noexcept
+LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int maxLineDelay, int preferredK,
+                             int lockedStages) noexcept
 {
     LoopCoefficients c;
     const double f0 = clamp (s.frequency, 1.0, 0.45 * sampleRate);
@@ -71,6 +72,14 @@ LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int 
     // so the usable stage count is bounded by the loop budget.
     const double dispBudget = 0.5 * (period - c.lossDelay - minLine);
     int stages = clamp (s.dispersionStages, 0, kMaxDispersionStages);
+    // Each stage's DC delay (amount * period / stages) must exceed one sample to
+    // disperse at all; short loops therefore use fewer, stronger stages (>= ~2 samples).
+    // During a note the stage count is locked (a structural change would drop a stage
+    // with live state = click); only coefficients move then.
+    if (lockedStages >= 0)
+        stages = lockedStages;
+    else if (s.dispersion > 0.0)
+        stages = std::min (stages, std::max (1, static_cast<int> (std::floor (s.dispersion * period / 2.0))));
     stages = std::min (stages, static_cast<int> (std::floor (dispBudget)));
     double dispA = 0.0, dispDelay = 0.0;
     if (stages > 0 && s.dispersion > 0.0)
@@ -93,13 +102,18 @@ LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int 
             dispDelay = AllpassChain<kMaxDispersionStages>::phaseDelay (dispA, stages, w0);
         }
     }
-    else
+    else if (lockedStages < 0)
     {
         stages = 0;
     }
+    // A locked chain with nothing to disperse keeps its stages as unit delays (a = 0).
+    if (stages > 0 && dispA == 0.0)
+        dispDelay = static_cast<double> (stages);
     c.dispA = static_cast<float> (dispA);
     c.dispStages = stages;
     c.dispersionDelay = stages > 0 ? dispDelay : 0.0;
+
+    c.selectivity = SelectivityStage::design (w0, kSelectivityQ, s.loopSelectivity);
 
     // --- line delay -------------------------------------------------------------------
     double line = period - c.lossDelay - c.dispersionDelay;
@@ -130,7 +144,28 @@ LoopCoefficients retuneLoop (const LoopCoefficients& base, double frequency, dou
         c.delay = designAllpassDelay (line, w0, preferredK);
     else
         c.delay = FractionalDelaySetting::make (line, interpolation);
+    if (c.selectivity.s > 0.0f)
+        c.selectivity = SelectivityStage::design (w0, kSelectivityQ, c.selectivity.s);
     return c;
+}
+
+void loopResponse (const LoopCoefficients& c, double w, double& magnitude, double& phaseDelaySamples) noexcept
+{
+    double d = c.delay.k + allpassPhaseDelay (c.delay.a, w);
+    double mag = OnePoleLoss::magnitude (c.lossB0, c.lossA1, w);
+    if (c.lossA1 > 0.0f)
+        d += OnePoleLoss::phaseDelay (c.lossA1, w);
+    if (c.dispStages > 0)
+        d += c.dispStages * allpassPhaseDelay (c.dispA, w);
+    if (c.selectivity.s > 0.0f)
+    {
+        double re, im;
+        SelectivityStage::response (c.selectivity, w, re, im);
+        mag *= std::sqrt (re * re + im * im);
+        d += -std::atan2 (im, re) / w;
+    }
+    magnitude = mag;
+    phaseDelaySamples = d;
 }
 
 void WaveguideResonator::prepare (double newSampleRate, double minFrequency)
@@ -144,19 +179,36 @@ void WaveguideResonator::prepare (double newSampleRate, double minFrequency)
 
 void WaveguideResonator::setCoefficients (const LoopCoefficients& c, int rampSamples) noexcept
 {
-    const bool canRamp = hasCoeffs && rampSamples > 0 && c.delay.k == current.k;
+    const bool structureSame = c.dispStages == dispersion.stages;
+    const bool canRamp = hasCoeffs && rampSamples > 0 && structureSame;
     coeffs = c;
-    dispersion.a = c.dispA;
     dispersion.stages = c.dispStages;
+    selectivity.set (c.selectivity);
     if (canRamp)
     {
-        rampA = (c.delay.a - current.a) / static_cast<float> (rampSamples);
-        rampF = (c.delay.f - current.f) / static_cast<float> (rampSamples);
+        const float inv = 1.0f / static_cast<float> (rampSamples);
+        if (c.delay.k == current.k)
+        {
+            rampA = (c.delay.a - current.a) * inv;
+            rampF = (c.delay.f - current.f) * inv;
+        }
+        else
+        {
+            current = c.delay; // integer tap switch (hysteresis keeps these rare)
+            rampA = rampF = 0.0f;
+        }
+        rampB0 = (c.lossB0 - lossB0) * inv;
+        rampA1 = (c.lossA1 - lossA1) * inv;
+        rampDisp = (c.dispA - dispersion.a) * inv;
         rampRemaining = rampSamples;
     }
     else
     {
         current = c.delay;
+        lossB0 = c.lossB0;
+        lossA1 = c.lossA1;
+        dispersion.a = c.dispA;
+        rampA = rampF = rampB0 = rampA1 = rampDisp = 0.0f;
         rampRemaining = 0;
     }
     hasCoeffs = true;
@@ -166,6 +218,7 @@ void WaveguideResonator::reset() noexcept
 {
     line.clear();
     dispersion.reset();
+    selectivity.reset();
     thiranState = 0.0f;
     lossState = 0.0f;
 }
@@ -174,6 +227,7 @@ void WaveguideResonator::clearState() noexcept
 {
     line.clearRecent (static_cast<int> (coeffs.lineDelay) + 4);
     dispersion.reset();
+    selectivity.reset();
     thiranState = 0.0f;
     lossState = 0.0f;
 }

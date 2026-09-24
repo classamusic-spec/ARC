@@ -93,3 +93,50 @@ Locked visual reference stored at `design/reference/ARC_LOCKED_REFERENCE.png`
   compensated in the tuning phase.
 * 22/22 tests (resonator + network), 400 checks pass. Network cost 37–55 ns/sample/voice.
 
+---
+
+## Phases 4–6 — Exciters, tension/tuning, materials (quality gates: PASS)
+
+Built `ExciterEngine` (STRIKE/PLUCK/BOW/AIR), `MaterialProfile` + `MaterialEngine`
+(morphing, inspector modifiers, TENSION), `ArcVoice` (control-rate network design,
+release semantics, per-node coupling compensation, intonation tracker),
+`NetworkGeometry` (field → edge generators, shared with the UI). A "sound check"
+renders all 16 exciter × material combinations to WAV with pitch / decay / centroid /
+partial analysis; the design was iterated against it:
+
+1. **First listen**: GLASS sounded like a bright string (the CORE's harmonic series
+   dominated), METAL's fundamental split, bow/air locked onto high modes, AIR on GLASS
+   peaked at 20.5 (fixed-amplitude jet into a high-Q loop).
+2. **In-loop banded selectivity** gave correct modal spectra but a one-pole steep enough
+   to band had G(0) ≫ G(f0): the DC cap shortened the fundamental and left sub-f0 modes
+   ringing for 280 s. Replaced by a zero-phase `(1−s) + s·BP` stage.
+3. That stage made selective nodes dissipative, so coupling became a damper (GLASS T60
+   3.4 s → 0.6 s). Diagnosed with the new per-node perturbation estimator (predicted
+   the damping exactly). **Selectivity moved to the excitation and radiation ports**;
+   loops stay reactive. The CORE keeps in-loop selectivity only under BOW/AIR.
+4. METAL −43 cents: the hum node's (0.5) loop overtone sat on f0 → avoided crossing
+   (−50/+51 cents at coupling 0.35). METAL now uses tierce/quint/nominal/undeciem.
+5. Nonlinear drives pull pitch → intonation tracker for BOW/AIR (≤ 0.4 cents).
+6. AIR jet (half-period delay) pulled pitch 23 cents → in-phase negative resistance
+   proportional to the CORE's measured loss + a pitch-independent speaking rate.
+7. Coupling compensation: first-order formula under-corrected by 12 %. Exact Schur
+   complement did not help; a bisection root of det(I − DQ) matched measurement to 0.01
+   cents, isolating the bug to the **coincidence taper** (it counted short loops' DC
+   modes as coincidences). Also reverted a wrong group-delay conversion. Now ≤ 0.37
+   cents up to coupling 0.5.
+8. Pluck-position notches were filled by FM sidebands: energy-dependent tuning tracked
+   16-sample block energy (the waveform), modulating loops at f0. Now follows a 40 ms
+   envelope (h4 notch 17 → 37 dB).
+9. GLASS 4.93/7.9 and WOOD 3.93 nodes formed 25–35 Hz doublets with CORE harmonics →
+   ratios moved away from integers (GLASS) / free-bar modes (WOOD).
+10. Bow release damped GLASS 24 dB in 50 ms (bow stayed in contact) → contact force
+    follows the envelope.
+11. Material morph: exponential glide jumped HF 56 dB in one frame; adaptive dispersion
+    stage count could change mid-note → stage count locked per note, all loop
+    coefficients ramp per sample, smoothstep morph (worst spike 3.9 dB).
+
+Gates: 41 tests / 620 checks pass (resonator, network, exciters, tuning, materials,
+sound check, sustained-level stability). Key numbers: C1–C6 pitch ≤ 0.59 cents across
+six exciter/material combos; chromatic ≤ 0.19; bowed pitch ≤ 0.4; coupling-compensated
+pitch ≤ 0.37 cents up to coupling 0.5; all 16 combos balanced at −22 dB RMS (C4).
+
