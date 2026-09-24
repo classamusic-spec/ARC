@@ -75,3 +75,21 @@ Locked visual reference stored at `design/reference/ARC_LOCKED_REFERENCE.png`
 * Final: 11/11 tests, 326 checks pass. Worst pitch error C1–C6 at 5 sample rates:
   0.00007 cents. Loop cost 4.9 ns/sample.
 
+---
+
+## Phase 3 — Resonant network (quality gate: PASS)
+
+* `CouplingMatrix`: Cayley-transform scattering (orthogonal for any generator), 10
+  edges, 4 topologies. `ResonantNetwork`: 5 loops, per-sample Q interpolation, stereo
+  pickup, node-energy/edge-flux telemetry, cached control-rate redesign.
+* First run: 2 of 11 failed.
+  * Fuzz: 3/1500 configs stored up to 1.76× injected energy. Investigation (scratch
+    program) showed every case was near-lossless under abusive ±2.5 % delay jumps:
+    bounded parametric pumping. Lossy + realistic modulation measured strictly passive
+    (0.973). Test split into both regimes; FREEZE will need an energy governor.
+  * Telemetry: matrix-entry flux showed ring energy in a STAR (indirect paths). Edge
+    flux now comes from each edge's own rotation.
+* Measured coupling-induced fundamental detune (5.4 cents at φ=0.35) → to be
+  compensated in the tuning phase.
+* 22/22 tests (resonator + network), 400 checks pass. Network cost 37–55 ns/sample/voice.
+

@@ -115,6 +115,24 @@ LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int 
     return c;
 }
 
+LoopCoefficients retuneLoop (const LoopCoefficients& base, double frequency, double sampleRate, int maxLineDelay,
+                             Interpolation interpolation, int preferredK) noexcept
+{
+    LoopCoefficients c = base;
+    const double f0 = clamp (frequency, 1.0, 0.45 * sampleRate);
+    const double w0 = kTwoPi * f0 / sampleRate;
+    const double period = std::min (sampleRate / f0, static_cast<double> (maxLineDelay - 4));
+    double line = period - c.lossDelay - c.dispersionDelay;
+    line = clamp (line, minLineDelayFor (interpolation), static_cast<double> (maxLineDelay - 4));
+    c.lineDelay = line;
+    c.totalDelay = period;
+    if (interpolation == Interpolation::thiran1)
+        c.delay = designAllpassDelay (line, w0, preferredK);
+    else
+        c.delay = FractionalDelaySetting::make (line, interpolation);
+    return c;
+}
+
 void WaveguideResonator::prepare (double newSampleRate, double minFrequency)
 {
     sampleRate = newSampleRate;

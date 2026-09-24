@@ -1,0 +1,71 @@
+network/cayley scattering is orthogonal,worstOrthogonalityError,9.3983e-08
+network/impulse into core propagates to every node,uncoupled.energyInNodesAtoD,0
+network/impulse into core propagates to every node,star.nodeA.peakRelToCoreDb,-15.2292
+network/impulse into core propagates to every node,star.nodeA.peakTime_s,0.0153333
+network/impulse into core propagates to every node,star.nodeB.peakRelToCoreDb,-9.20926
+network/impulse into core propagates to every node,star.nodeB.peakTime_s,0.041
+network/impulse into core propagates to every node,star.nodeC.peakRelToCoreDb,-13.8995
+network/impulse into core propagates to every node,star.nodeC.peakTime_s,0.031
+network/impulse into core propagates to every node,star.nodeD.peakRelToCoreDb,-10.9372
+network/impulse into core propagates to every node,star.nodeD.peakTime_s,0.0303333
+network/impulse into core propagates to every node,ring.nodeA.peakRelToCoreDb,-13.9414
+network/impulse into core propagates to every node,ring.nodeA.peakTime_s,0.0426667
+network/impulse into core propagates to every node,ring.nodeB.peakRelToCoreDb,-9.4915
+network/impulse into core propagates to every node,ring.nodeB.peakTime_s,0.032
+network/impulse into core propagates to every node,ring.nodeC.peakRelToCoreDb,-14.8839
+network/impulse into core propagates to every node,ring.nodeC.peakTime_s,0.031
+network/impulse into core propagates to every node,ring.nodeD.peakRelToCoreDb,-12.8853
+network/impulse into core propagates to every node,ring.nodeD.peakTime_s,0.0213333
+network/impulse into core propagates to every node,chain.nodeA.peakRelToCoreDb,-12.3383
+network/impulse into core propagates to every node,chain.nodeA.peakTime_s,0.0516667
+network/impulse into core propagates to every node,chain.nodeB.peakRelToCoreDb,-21.3591
+network/impulse into core propagates to every node,chain.nodeB.peakTime_s,0.0563333
+network/impulse into core propagates to every node,chain.nodeC.peakRelToCoreDb,-30.8033
+network/impulse into core propagates to every node,chain.nodeC.peakTime_s,0.081
+network/impulse into core propagates to every node,chain.nodeD.peakRelToCoreDb,-20.4188
+network/impulse into core propagates to every node,chain.nodeD.peakTime_s,0.0713333
+network/energy decays and output is bounded,broadbandT60_s,1.58954
+network/energy decays and output is bounded,rms@0.2s,0.00547941
+network/energy decays and output is bounded,rms@2.0s,6.44295e-06
+network/energy decays and output is bounded,rms@4.5s,9.69323e-10
+network/maximum coupling stays stable,phi0.80.peak,0.578333
+network/maximum coupling stays stable,phi1.20.peak,0.581582
+network/maximum coupling stays stable,phi1.57.peak,0.57773
+network/stability fuzz,abusive.configs,1500
+network/stability fuzz,abusive.nonFiniteSamples,0
+network/stability fuzz,abusive.worstStoredOverInjected,1.68364
+network/stability fuzz,abusive.worstPeak,7.39983
+network/stability fuzz,smooth.configs,1500
+network/stability fuzz,smooth.nonFiniteSamples,0
+network/stability fuzz,smooth.worstStoredOverInjected,0.973212
+network/stability fuzz,smooth.worstPeak,9.66062
+network/topologies sound different,lsd_star_vs_ring_dB,1.53225
+network/topologies sound different,lsd_star_vs_web_dB,5.79667
+network/topologies sound different,lsd_star_vs_chain_dB,14.8554
+network/topologies sound different,lsd_ring_vs_web_dB,6.36162
+network/topologies sound different,lsd_ring_vs_chain_dB,15.0515
+network/topologies sound different,lsd_web_vs_chain_dB,16.6953
+network/coupling automation is safe,curvature_before,0.00901386
+network/coupling automation is safe,curvature_during_sweep,0.004262
+network/coupling automation is safe,hfRatioDb_before,-49.4874
+network/coupling automation is safe,hfRatioDb_during,-92.1763
+network/lossless network conserves energy,energy@0.1s,4.56661
+network/lossless network conserves energy,energy@10s,4.54793
+network/lossless network conserves energy,ratio_10s_over_0.1s,0.99591
+network/lossless network conserves energy,maxOverMinDuringRun,1.02775
+network/telemetry reflects dsp,phi0.0.spokeFlux,0
+network/telemetry reflects dsp,phi0.3.spokeFlux,0.000199288
+network/fundamental stays in tune when coupled,phi0.00.fundamentalCents,-3.68849e-05
+network/fundamental stays in tune when coupled,phi0.10.fundamentalCents,0.44725
+network/fundamental stays in tune when coupled,phi0.20.fundamentalCents,1.78476
+network/fundamental stays in tune when coupled,phi0.35.fundamentalCents,5.42898
+network/cpu,nsPerSample_static@48k,36.4768
+network/cpu,nsPerSample_drifting@48k,52.9574
+network/cpu,fullDesignsPerSecond_drifting@48k,8.88
+network/cpu,retunesPerSecond_drifting@48k,14988.6
+network/cpu,coreFractionPerVoice_drifting@48k,0.00254195
+network/cpu,nsPerSample_static@96k,37.445
+network/cpu,nsPerSample_drifting@96k,54.6771
+network/cpu,fullDesignsPerSecond_drifting@96k,17.76
+network/cpu,retunesPerSecond_drifting@96k,29977.2
+network/cpu,coreFractionPerVoice_drifting@96k,0.005249

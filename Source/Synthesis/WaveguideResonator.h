@@ -55,6 +55,12 @@ struct LoopCoefficients
 LoopCoefficients designLoop (const ResonatorSettings& s, double sampleRate, int maxLineDelay,
                              int preferredK = -1) noexcept;
 
+/** Cheap re-tune for small frequency changes: keeps the loss and dispersion
+    coefficients (and their phase delays) of `base`, recomputes only the line delay
+    and the fractional allpass for the new frequency. */
+LoopCoefficients retuneLoop (const LoopCoefficients& base, double frequency, double sampleRate, int maxLineDelay,
+                             Interpolation interpolation, int preferredK) noexcept;
+
 class WaveguideResonator
 {
 public:
@@ -72,6 +78,8 @@ public:
     }
 
     const LoopCoefficients& getCoefficients() const noexcept { return coeffs; }
+    int currentIntegerDelay() const noexcept { return current.k; }
+    bool hasCoefficients() const noexcept { return hasCoeffs; }
     Interpolation getInterpolation() const noexcept { return interpolation; }
     double getSampleRate() const noexcept { return sampleRate; }
     int maxLineDelay() const noexcept { return line.maxDelay(); }
@@ -103,6 +111,18 @@ public:
 
     /** Clears only the portion of the line the current tuning uses. */
     void clearState() noexcept;
+
+    /** Sum of squares of the samples currently circulating in the line. */
+    double lineEnergy() const noexcept
+    {
+        double e = 0.0;
+        for (int i = 1; i <= current.k + 1; ++i)
+        {
+            const double v = line.tap (i);
+            e += v * v;
+        }
+        return e;
+    }
 
 private:
     DelayLine line;
