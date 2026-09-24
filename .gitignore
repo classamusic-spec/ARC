@@ -1,0 +1,19 @@
+# Build output
+/build*/
+/cmake-build-*/
+/out/
+/external/JUCE/
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Local test render scratch (curated measurements live in docs/measurements)
+/Tests/output/
