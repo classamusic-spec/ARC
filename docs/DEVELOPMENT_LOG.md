@@ -140,3 +140,20 @@ sound check, sustained-level stability). Key numbers: C1–C6 pitch ≤ 0.59 cen
 six exciter/material combos; chromatic ≤ 0.19; bowed pitch ≤ 0.4; coupling-compensated
 pitch ≤ 0.37 cents up to coupling 0.5; all 16 combos balanced at −22 dB RMS (C4).
 
+---
+
+## Phase 7 — Polyphony and voice architecture (quality gate: PASS)
+
+* Replaced the bootstrap synth with `ArcEngine`: 20 physical / ≤ 16 logical voices,
+  fade-out stealing in spare slots, quietest-released victim, same-note re-strike,
+  sustain pedal, pitch bend, poly/channel aftertouch, CC74, lower-zone MPE, mono/legato
+  with glide. Voices now keep their own control clock so sample-accurate MIDI splits
+  never cause extra redesigns.
+* Added the complete parameter layout (65 parameters, stable versioned IDs), the
+  parameter cache feeding `EngineParams` once per block, the output stage (width,
+  small Householder FDN space, ADAA drive, master, soft safety clip, NaN guard) and
+  lock-free telemetry.
+* Gate: 10/10 voice tests passed on the first run (details in VOICE_ARCHITECTURE.md).
+* CPU profile: ~1 % of a core per voice at 48 kHz; 16 voices 16–18 % (48 kHz), 22–25 %
+  (96 kHz). Finding: quality modes differ by < 1 % — not yet a meaningful trade-off.
+

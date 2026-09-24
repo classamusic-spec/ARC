@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include "Core/Parameters.h"
 #include "Engine/ArcEngine.h"
 
 class ArcAudioProcessor final : public juce::AudioProcessor
@@ -36,13 +37,18 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState& getValueTreeState() noexcept { return apvts; }
+    arc::ArcEngine& getEngine() noexcept { return engine; }
+    arc::Telemetry& getTelemetry() noexcept { return engine.getTelemetry(); }
 
 private:
-    void handleMidiMessage (const juce::MidiMessage& m);
+    void handleMidiMessage (const juce::MidiMessage& m) noexcept;
+    void updateTransport() noexcept;
 
     juce::AudioProcessorValueTreeState apvts;
-    std::atomic<float>* masterParam = nullptr;
+    arc::params::ParameterCache paramCache;
+    arc::EngineParams engineParams;
     arc::ArcEngine engine;
+    std::vector<float> monoScratch;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArcAudioProcessor)
 };

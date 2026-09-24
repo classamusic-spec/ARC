@@ -75,6 +75,11 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
     pressure = 0.0f;
     noteBend = 0.0f;
     timbre = 0.0f;
+    pitchNote = static_cast<float> (newNote);
+    glideCoeff = 0.0f;
+    samplesToControl = controlInterval;
+    blockLevelAcc = blockExciterAcc = 0.0f;
+    blockSamples = 0;
     state = State::active;
     gain = 1.0f;
     gainStep = 0.0f;
@@ -114,22 +119,51 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
         }
     }
     network.clearState();
+    triggerExciter (ctl, seed);
+}
 
+void ArcVoice::triggerExciter (const VoiceControl& ctl, uint32_t seed) noexcept
+{
     auto params = ctl.exciter;
     params.strikeHardness = clamp (params.strikeHardness + ctl.material.hardnessBias, 0.0f, 1.0f);
-    params.strikeTone = clamp (params.strikeTone + ctl.material.toneBias, 0.0f, 1.0f);
-    params.pluckTone = clamp (params.pluckTone + ctl.material.toneBias, 0.0f, 1.0f);
-    params.airTone = clamp (params.airTone + ctl.material.toneBias, 0.0f, 1.0f);
+    params.strikeTone = clamp (params.strikeTone + ctl.material.toneBias + 0.25f * timbre, 0.0f, 1.0f);
+    params.pluckTone = clamp (params.pluckTone + ctl.material.toneBias + 0.25f * timbre, 0.0f, 1.0f);
+    params.airTone = clamp (params.airTone + ctl.material.toneBias + 0.25f * timbre, 0.0f, 1.0f);
     exciter.noteOn (ctl.exciterType, params, velocity, ctl.excite, pressure,
                     static_cast<float> (sampleRate / coreFrequency), seed);
 }
 
-void ArcVoice::glideTo (int newNote, float newVelocity) noexcept
+void ArcVoice::restrike (float newVelocity, uint32_t seed, const VoiceControl& ctl) noexcept
+{
+    velocity = newVelocity;
+    state = State::active;
+    gain = 1.0f;
+    gainStep = 0.0f;
+    sustainedByPedal = false;
+    silentBlocks = 0;
+    releaseT60Mult = 1.0f;
+    triggerExciter (ctl, seed);
+}
+
+void ArcVoice::glideTo (int newNote, float newVelocity, float glideSeconds, bool reexcite, uint32_t seed,
+                        const VoiceControl& ctl) noexcept
 {
     note = newNote;
-    velocity = std::max (velocity, newVelocity * 0.8f);
-    if (state == State::released)
-        state = State::active;
+    const double updatesPerSecond = sampleRate / controlInterval;
+    glideCoeff = glideSeconds > 0.0f ? smoothingCoeff (glideSeconds / 3.0, updatesPerSecond) : 0.0f;
+    if (glideCoeff == 0.0f)
+        pitchNote = static_cast<float> (newNote);
+    state = State::active;
+    gain = 1.0f;
+    gainStep = 0.0f;
+    sustainedByPedal = false;
+    silentBlocks = 0;
+    releaseT60Mult = 1.0f;
+    if (reexcite)
+    {
+        velocity = newVelocity;
+        triggerExciter (ctl, seed);
+    }
 }
 
 void ArcVoice::release() noexcept
@@ -155,7 +189,11 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     const auto& m = ctl.material;
     const double sr = sampleRate;
 
-    fundamental = midiToHz (note + static_cast<double> (ctl.bendSemitones) + noteBend);
+    if (! immediate)
+        pitchNote = static_cast<float> (note) + glideCoeff * (pitchNote - static_cast<float> (note));
+    else
+        pitchNote = static_cast<float> (note);
+    fundamental = midiToHz (static_cast<double> (pitchNote) + static_cast<double> (ctl.bendSemitones) + noteBend);
     const double f0 = clamp (fundamental, kMinCoreFrequency, 0.42 * sr);
     if (exciter.isSustained())
         intonationFilter.set (SelectivityStage::design (kTwoPi * f0 / sr, 2.0, 0.98));
@@ -168,6 +206,8 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     pluckDampMult = ctl.exciterType == ExciterType::pluck ? std::exp2 (-4.0f * ctl.exciter.pluckDamp) : 1.0f;
     const float freezeMult = 1.0f + 1.0e4f * ctl.freeze * ctl.freeze;
     const float decayCommon = releaseT60Mult * pluckDampMult * freezeMult;
+    // MPE timbre (CC74 / slide) brightens or darkens this note's high-frequency decay.
+    const float timbreHf = std::exp2 (2.0f * clamp (timbre, -1.0f, 1.0f));
 
     auto energyFactor = [&] (int i)
     {
@@ -200,7 +240,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
             decayScale = static_cast<float> (clamp (t60Loop / std::max (1.0e-4, static_cast<double> (t60f)), 1.0, 3.0));
         }
         n.t60Fundamental = t60f * decayScale;
-        n.t60High = t60h * decayScale;
+        n.t60High = std::min (t60h * timbreHf, t60f) * decayScale;
         n.hfReference = hfRef;
         n.dispersion = disp;
         n.dispersionStages = ctl.dispersionStages;
@@ -331,11 +371,28 @@ void ArcVoice::trackIntonation (float coreSample) noexcept
 
 void ArcVoice::render (float* outL, float* outR, int n, const VoiceControl& ctl) noexcept
 {
-    if (state == State::idle)
-        return;
+    int done = 0;
+    while (done < n && state != State::idle)
+    {
+        if (samplesToControl <= 0)
+        {
+            if (blockSamples > 0)
+                finishBlock (blockSamples, ctl);
+            if (state == State::idle)
+                break;
+            updateControl (ctl, false);
+            samplesToControl = controlInterval;
+        }
+        const int len = std::min (n - done, samplesToControl);
+        renderSpan (outL + done, outR + done, len);
+        samplesToControl -= len;
+        blockSamples += len;
+        done += len;
+    }
+}
 
-    updateControl (ctl, false);
-
+void ArcVoice::renderSpan (float* outL, float* outR, int n) noexcept
+{
     float y[kNumNodes];
     float lAcc = 0.0f, eAcc = 0.0f;
     const float norm = outputNorm;
@@ -360,8 +417,12 @@ void ArcVoice::render (float* outL, float* outR, int n, const VoiceControl& ctl)
         lAcc += l * l + r * r;
         eAcc += e * e;
     }
+    blockLevelAcc += lAcc;
+    blockExciterAcc += eAcc;
+}
 
-    // --- telemetry + lifecycle ---------------------------------------------------------
+void ArcVoice::finishBlock (int n, const VoiceControl& ctl) noexcept
+{
     nodeEnergy = network.takeNodeEnergy();
     // Energy-dependent tuning must follow the *envelope* (~40 ms), not the waveform:
     // block energies fluctuate at the vibration rate, and a faster smoother frequency-
@@ -370,9 +431,11 @@ void ArcVoice::render (float* outL, float* outR, int n, const VoiceControl& ctl)
     for (int i = 0; i < kNumNodes; ++i)
         smoothEnergy[static_cast<size_t> (i)] += envCoeff * (nodeEnergy[static_cast<size_t> (i)] - smoothEnergy[static_cast<size_t> (i)]);
     edgeFlux = network.edgeFlux (nodeEnergy);
-    const float blockLevel = lAcc / static_cast<float> (std::max (1, n));
+    const float blockLevel = blockLevelAcc / static_cast<float> (std::max (1, n));
     level += 0.3f * (blockLevel - level);
-    exciterEnergy = eAcc / static_cast<float> (std::max (1, n));
+    exciterEnergy = blockExciterAcc / static_cast<float> (std::max (1, n));
+    blockLevelAcc = blockExciterAcc = 0.0f;
+    blockSamples = 0;
     ++age;
 
     if (! std::isfinite (blockLevel))

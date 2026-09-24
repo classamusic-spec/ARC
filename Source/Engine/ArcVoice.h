@@ -33,8 +33,11 @@ public:
     void reset() noexcept;
 
     void start (int note, int channel, float velocity, uint32_t seed, const VoiceControl& ctl) noexcept;
-    /** Legato: change pitch without re-exciting (mono legato mode). */
-    void glideTo (int note, float velocity) noexcept;
+    /** Re-excite the (possibly still ringing) network: a second strike on the same
+        resonator adds to its motion instead of stacking another voice. */
+    void restrike (float velocity, uint32_t seed, const VoiceControl& ctl) noexcept;
+    /** Legato: glide to a new pitch (glideSeconds portamento); re-excite if asked. */
+    void glideTo (int note, float velocity, float glideSeconds, bool reexcite, uint32_t seed, const VoiceControl& ctl) noexcept;
     void release() noexcept;
     void beginSteal() noexcept;
 
@@ -43,7 +46,8 @@ public:
     void setNoteBend (float semitones) noexcept { noteBend = semitones; }
     void setTimbre (float t) noexcept { timbre = t; }
 
-    /** Renders n <= controlInterval samples, adding into outL/outR. */
+    /** Renders n samples (any size), adding into outL/outR. Control updates happen
+        every controlInterval samples of the voice's own clock. */
     void render (float* outL, float* outR, int n, const VoiceControl& ctl) noexcept;
 
     State getState() const noexcept { return state; }
@@ -71,7 +75,10 @@ public:
 
 private:
     void updateControl (const VoiceControl& ctl, bool immediate) noexcept;
+    void renderSpan (float* outL, float* outR, int n) noexcept;
+    void finishBlock (int n, const VoiceControl& ctl) noexcept;
     void trackIntonation (float coreSample) noexcept;
+    void triggerExciter (const VoiceControl& ctl, uint32_t seed) noexcept;
 
     dsp::ResonantNetwork network;
     dsp::ExciterEngine exciter;
@@ -101,6 +108,11 @@ private:
     float pluckDampMult = 1.0f;
     int silentBlocks = 0;
     float outputNorm = 1.0f;
+    int samplesToControl = 0;
+    float pitchNote = 60.0f;      // gliding note (semitones)
+    float glideCoeff = 0.0f;      // per control update
+    float blockLevelAcc = 0.0f, blockExciterAcc = 0.0f;
+    int blockSamples = 0;
 
     // Intonation tracker for sustained exciters (see trackIntonation).
     dsp::SelectivityStage intonationFilter;

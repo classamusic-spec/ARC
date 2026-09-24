@@ -1,29 +1,21 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-namespace
-{
-juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
-{
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    layout.add (std::make_unique<juce::AudioParameterFloat> (
-        juce::ParameterID { "arc.master.output.v1", 1 }, "Master Output",
-        juce::NormalisableRange<float> (-60.0f, 6.0f, 0.01f), -6.0f,
-        juce::AudioParameterFloatAttributes().withLabel ("dB")));
-    return layout;
-}
-} // namespace
-
 ArcAudioProcessor::ArcAudioProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "ARC", createLayout())
+      apvts (*this, nullptr, "ARC", arc::params::createLayout()),
+      paramCache (apvts)
 {
-    masterParam = apvts.getRawParameterValue ("arc.master.output.v1");
+    paramCache.fill (engineParams);
+    engine.setParameters (engineParams);
 }
 
 void ArcAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    paramCache.fill (engineParams);
+    engine.setParameters (engineParams);
     engine.prepare (sampleRate, samplesPerBlock);
+    monoScratch.assign (static_cast<size_t> (std::max (samplesPerBlock, 32)), 0.0f);
 }
 
 void ArcAudioProcessor::releaseResources() {}
@@ -34,43 +26,71 @@ bool ArcAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) cons
     return out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono();
 }
 
-void ArcAudioProcessor::handleMidiMessage (const juce::MidiMessage& m)
+void ArcAudioProcessor::handleMidiMessage (const juce::MidiMessage& m) noexcept
 {
+    const int ch = m.getChannel();
     if (m.isNoteOn())
-        engine.noteOn (m.getNoteNumber(), m.getFloatVelocity());
+        engine.noteOn (ch, m.getNoteNumber(), m.getFloatVelocity());
     else if (m.isNoteOff())
-        engine.noteOff (m.getNoteNumber());
+        engine.noteOff (ch, m.getNoteNumber());
+    else if (m.isPitchWheel())
+        engine.pitchBend (ch, static_cast<float> (m.getPitchWheelValue() - 8192) / 8192.0f);
+    else if (m.isChannelPressure())
+        engine.channelPressure (ch, static_cast<float> (m.getChannelPressureValue()) / 127.0f);
+    else if (m.isAftertouch())
+        engine.polyPressure (ch, m.getNoteNumber(), static_cast<float> (m.getAfterTouchValue()) / 127.0f);
+    else if (m.isController())
+        engine.controller (ch, m.getControllerNumber(), static_cast<float> (m.getControllerValue()) / 127.0f);
     else if (m.isAllNotesOff() || m.isAllSoundOff())
-        engine.reset();
+        engine.allNotesOff (m.isAllSoundOff());
+}
+
+void ArcAudioProcessor::updateTransport() noexcept
+{
+    arc::TransportInfo t;
+    if (auto* ph = getPlayHead())
+        if (auto pos = ph->getPosition())
+        {
+            t.valid = true;
+            if (auto bpm = pos->getBpm())
+                t.bpm = *bpm;
+            if (auto ppq = pos->getPpqPosition())
+                t.ppqPosition = *ppq;
+            t.playing = pos->getIsPlaying();
+            if (auto sig = pos->getTimeSignature())
+                t.beatsPerBar = sig->numerator * 4.0 / std::max (1, sig->denominator);
+        }
+    engine.setTransport (t);
 }
 
 void ArcAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
-    buffer.clear();
 
-    engine.setMasterGain (juce::Decibels::decibelsToGain (masterParam->load(), -60.0f));
+    paramCache.fill (engineParams);
+    engine.setParameters (engineParams);
+    updateTransport();
 
     const int numSamples = buffer.getNumSamples();
     auto* left = buffer.getWritePointer (0);
-    auto* right = buffer.getNumChannels() > 1 ? buffer.getWritePointer (1) : nullptr;
-
-    // Scratch for mono layouts: render right into left's tail-free twin.
-    float monoScratch[512];
+    const bool stereo = buffer.getNumChannels() > 1;
+    auto* right = stereo ? buffer.getWritePointer (1) : nullptr;
+    for (int ch = 2; ch < buffer.getNumChannels(); ++ch)
+        buffer.clear (ch, 0, numSamples);
 
     int position = 0;
     auto renderTo = [&] (int end)
     {
         while (position < end)
         {
-            const int chunk = right != nullptr ? end - position : juce::jmin (end - position, 512);
-            if (right != nullptr)
+            const int chunk = stereo ? end - position
+                                     : juce::jmin (end - position, static_cast<int> (monoScratch.size()));
+            if (stereo)
                 engine.render (left + position, right + position, chunk);
             else
             {
-                juce::FloatVectorOperations::clear (monoScratch, chunk);
-                engine.render (left + position, monoScratch, chunk);
-                juce::FloatVectorOperations::add (left + position, monoScratch, chunk);
+                engine.render (left + position, monoScratch.data(), chunk);
+                juce::FloatVectorOperations::add (left + position, monoScratch.data(), chunk);
                 juce::FloatVectorOperations::multiply (left + position, 0.5f, chunk);
             }
             position += chunk;
