@@ -146,6 +146,8 @@ void blit (juce::Graphics& g, const juce::Image& img, juce::Point<float> c, floa
 
 juce::String ratioText (float ratio)
 {
+    if (ratio <= 0.0f)
+        return juce::String::fromUTF8 ("\xe2\x80\x94"); // no audio processed yet
     return juce::String::charToString (0x00d7) + juce::String (ratio, ratio < 10.0f ? 2 : 1);
 }
 } // namespace
@@ -439,6 +441,8 @@ void ResonanceField::paintSideReadouts (juce::Graphics& g)
     float harmonic = 0.0f;
     for (auto r : model.nodeRatio)
     {
+        if (r <= 0.0f)
+            continue;
         const float nearest = juce::jmax (1.0f, std::round (r * 2.0f) * 0.5f);
         harmonic += 1.0f - juce::jlimit (0.0f, 1.0f, std::abs (r - nearest) / 0.08f);
     }

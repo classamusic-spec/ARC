@@ -40,6 +40,9 @@ endif()
 if(ARC_SANITIZER_FLAGS)
     add_compile_options(${ARC_SANITIZER_FLAGS})
     add_link_options(${ARC_SANITIZER_FLAGS})
+    # Timing thresholds (CPU budget, frame cost) are measured but not enforced when
+    # instrumented: sanitizers slow execution by design.
+    add_compile_definitions(ARC_SANITIZED=1)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -157,7 +160,12 @@ target_link_libraries(ARC PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 if(ARC_ENABLE_LTO)
-    target_link_libraries(ARC PRIVATE juce::juce_recommended_lto_flags)
+    # GCC: partition the LTO link across all cores (also avoids the "serial compilation
+    # of N LTRANS jobs" note). An interface target, so it reaches the format targets'
+    # final links the same way JUCE's LTO flags do.
+    add_library(arc_lto_parallel INTERFACE)
+    target_link_options(arc_lto_parallel INTERFACE $<$<CXX_COMPILER_ID:GNU>:-flto=auto>)
+    target_link_libraries(ARC PRIVATE juce::juce_recommended_lto_flags arc_lto_parallel)
 endif()
 
 # ---------------------------------------------------------------------------

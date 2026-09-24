@@ -209,3 +209,153 @@ drawn; state round trip bit-identical; every parameter automated under a ringing
 without non-finite output (worst step ratio 2.96 = BRIGHTNESS brightening the tone);
 preset switching every 130 ms while notes sound: bounded, no voice resets.
 Full suite: 71 tests / 823 checks, all passing.
+
+
+---
+
+## Phases 11–12 — ARC silver UI and the audio-reactive Resonance Field (quality gate: PASS)
+
+The engine was proven first (Phases 2–10); the machine was then built around it,
+following the locked reference (UI_SYSTEM.md).
+
+* **Design system.** Palette tokens (satin silver / graphite / ice cyan, amber only for
+  recording) and embedded Jost (SIL OFL 1.1; static Light / Regular / Medium instances
+  cut from the variable font with fontTools). Surfaces are drawn procedurally: chassis,
+  raised plates, recessed tray, chrome bezel and brushed grain, cached at physical
+  pixel density. Custom knobs (segmented cyan value ring, chrome ring, graphite cap),
+  selector tiles, round buttons, segmented controls, chips, a vector icon set and the
+  logotype.
+* **Resonance Field.** Node positions come from the node parameters plus effective
+  motion telemetry. The connections are the active topology's edges, weighted by the
+  rotation actually in use. Halos, flow pulses, strike rings, frost, tremor and ring
+  spacing are all driven by telemetry. Interaction: drag with Shift for fine control,
+  double-click to reset, Alt-drag or REC to record gestures, click for inspectors. The
+  chamber caption is the help system.
+* **Contextual UX.** Inline exciter / material inspectors, node and CORE inspectors
+  docked in the less crowded band, a settings card, a preset browser, keyboard
+  shortcuts, and resizing from 75 to 150 % with the size persisted in the session.
+* **Found by tests and snapshot review.**
+  * The logotype read "ARU" (wrong arc angles).
+  * A node jumped on grab: `dragOffset` was computed after the display switched to
+    the drag values. The drag test measures landing error, now 0.04 px.
+  * A pure-virtual call from a panel constructor (fixed with `finishInit()`).
+  * Clipped round-button shadows, a translucent card, the crosshair glint over the
+    title, readouts overlapping junctions, and the dock covering the CORE.
+* **Performance.** The field frame at 2× took 22 ms. It now takes 5 ms, using an opaque
+  static layer keyed by TENSION and device-resolution sprites blitted 1 : 1. The frame
+  clock is display-synced and drops to 15 fps when idle.
+* **pluginval at strictness 10 with GUI** found that boolean parameters could restore
+  to 0.5-ish values. Fixed with `SnappingBool`, a parameter that snaps to 0 / 1. After
+  that: SUCCESS.
+
+## Phase 13 — Performance optimisation
+
+* Profiling (callgrind, 8 bowed voices): per-sample DSP was ~40 % of the cost and
+  control-rate work (network redesign, coupling compensation, per-voice scattering)
+  ~55 % at a 0.33 ms control period.
+* **QUALITY became a real trade-off.** It now sets the control period (HIGH 0.33 ms,
+  NORMAL 0.67 ms default, ECO 1.33 ms) and the dispersion stages (6 / 4 / 2). 16 bowed
+  voices at 48 kHz: 20.4 / 12.4 / 9.0 % of a core. All quality-gate tests pass at the
+  new default and at ECO.
+* **Modes sound alike.** Log-spectral distance to HIGH is 1.2 dB (NORMAL) and 1.7 dB
+  (ECO); pitch is identical within 0.04 cents. Switching is live at each voice's next
+  control boundary; the largest step while switching is 0.0123 vs 0.0121 steady.
+* Block-counted time constants in the voice became time based (release damping, freeze
+  capture, governor settle, silence detection), so every mode behaves the same.
+
+## Phase 14 — Validation
+
+* **Realtime instrumentation** (`Tests/RealtimeTests.cpp`). A global `operator new`
+  hook counts audio-thread allocations: 0 in 640 blocks, with MIDI, preset / gesture
+  changes and automation of every structural parameter. A concurrency stress test runs
+  a live audio thread while the message thread loads presets, randomises, records
+  gestures and saves / restores state.
+* **Sanitizers.**
+  * ASan + UBSan: full suite, no reports.
+  * TSan: concurrency stress and editor-vs-audio test, no reports.
+  * Timing thresholds are measured but not enforced in sanitizer builds
+    (`ARC_SANITIZED`), and the allocation detector steps aside for the sanitizer's
+    allocator.
+* **Host behaviour** (`Tests/HostTests.cpp`).
+  * Block sizes 1–4096 are bit-identical.
+  * Sample-rate changes 22.05–192 kHz, each re-prepared mid-session, all sound.
+  * Instances are isolated (difference 0).
+  * Bypass, suspend / resume and editor open / close work while processing.
+* **GUI load** (the matrix's GUI closed / open column).
+  * An 8-voice bowed chord costs 9.2 % of a core with the editor closed and 8.9 %
+    with it open at 60 fps.
+  * The dirty regions the editor repaints per frame take 3.2 ms (18.5 % of the
+    message thread); a full-window repaint takes 9.7 ms.
+  * The frame-cost test now warms its caches first; the first-size number had
+    included the one-off cache build.
+* **CPU matrix extended.** Strike and bow at 8 and 16 voices, at coupling 0 / 1, CHAOS
+  1 and MOTION 1. CHAOS and MOTION cost up to ~1.5 points at 16 voices, because the
+  network is redesigned every control period.
+* **Fixes.**
+  * The editor's last-mouse position was a function-level `static`, so it was shared
+    between plugin instances. It is now a member.
+  * GCC LTO links now use `-flto=auto`: parallel, and without the "serial LTRANS"
+    note.
+* The parameter table in PARAMETERS.md is generated from the live layout by a test,
+  so it cannot drift from the code.
+
+## Phase 15 — Release candidate
+
+* **UI contrast and legibility pass, measured against the reference.** The same pixel
+  classifier on both images shows the silver share already matched (66.7 % vs 67.7 %).
+  The rest was not a close match:
+  * ARC's silver was lighter and nearly neutral against the reference's cool blue:
+    side-panel face RGB (210, 213, 217) vs (189, 196, 206); strip (228, 230, 232) vs
+    (169, 176, 186).
+  * Label ink was far paler: darkest label pixels RGB 103 vs 32.
+  * Knob bezels and tile outlines were weaker.
+
+  Changes:
+  * Cooler, darker silver tokens: panel face (198, 204, 211), strip (216, 220, 225);
+    mean silver lightness 210 vs the reference's 182.
+  * Label ink #1C2229–#353C45: the darkest label pixels are now (33, 39, 46), against
+    the reference's (32, 40, 49).
+  * Medium-weight macro labels; larger tile icons and labels.
+  * Crisp tile outlines and a stronger neon glow on the selected tile.
+  * Polished chrome knob rings with a dark outer edge; larger, visible value dots.
+  * Button faces derived from the tokens instead of hard-coded greys.
+* **COUPLING was out of tune at the top of its range. Found and fixed.** Writing the
+  known-limitations list meant measuring pitch over the whole knob, not only up to 0.5
+  as the tuning gate did. With the Phase 9 curve the compensated note was:
+  * 12–40 cents off at 0.65;
+  * 100–164 cents off at 0.8;
+  * −186 cents off at 1.0.
+
+  A trace showed the compensation's ±12 % authority clamp being reached at
+  0.62–0.64 on every material. Beyond about 0.75 rad of rotation a physical limit
+  also appears: the CORE leaks most of its energy per pass and dissolves into
+  composite modes. Fix:
+  * compensation authority ±30 %;
+  * a new COUPLING curve (`0.7277 c^0.9432`) that ends at the in-tune limit, keeps
+    the default 0.35 at the same rotation, and leaves the whole knob musical;
+  * factory presets converted to keep their rotation (audit figures identical);
+  * RANDOM's windows converted;
+  * field connection weights renormalised.
+
+  The tuning gate now covers all four materials and the whole range: ≤ 1.2 cents to
+  0.65 and ≤ 6.3 cents at the maximum, with the note the dominant partial. The
+  unison regression runs at maximum coupling. BOW and AIR speak everywhere, which
+  retires the Phase 9 AIR-at-high-coupling limitation. (NETWORK_COUPLING §6.2)
+* A clean rebuild surfaced four `-Wdouble-promotion` warnings in `Gesture.cpp` that
+  incremental builds had not recompiled. The conversions are now explicit, with values
+  unchanged.
+* Documentation completed: PRODUCT_SPEC, DSP_ARCHITECTURE, UI_SYSTEM, CORE_QUALITY_GATE,
+  README, RELEASE_CANDIDATE_REPORT.
+* **Standalone launch check** under Xvfb: the app window appears in 3.8 s and renders
+  the full editor. This check found a small UX bug: with no audio processed yet (no
+  device, or a host that opens the editor first), the node readouts said "RATIO ×0.00".
+  They now show "—" until the engine has published telemetry.
+* **Steinberg VST3 validator** built from the VST3 SDK 3.8: 47 / 47 standard and
+  537 / 537 extensive tests. pluginval's own validator hook passes the inner `.so`,
+  which that validator rejects on Linux; a wrapper that passes the bundle makes the
+  combined run pass.
+* Final state:
+  * 86 tests / 940 checks passing in Release (68.2 s).
+  * Clean rebuild from an empty build directory: 4 min 18 s, 0 warnings.
+  * pluginval strictness 10 with GUI: SUCCESS; VST3 validator: 47 / 47 and 537 / 537.
+  * Sanitizer runs on the final code: see the release report.

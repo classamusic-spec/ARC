@@ -518,9 +518,10 @@ TEST_CASE ("random", "full regeneration is musical and safe")
         const auto v = pm.captureCurrent().values;
         exciters.insert (juce::roundToInt (v.at (arc::params::exciterType)));
         materials.insert (juce::roundToInt (v.at (arc::params::materialType)));
-        // Musical windows.
+        // Musical windows. (The whole COUPLING range is in tune since the RC coupling
+        // curve; regeneration keeps a little away from both ends.)
         if (v.at (arc::params::tension) < 0.3f || v.at (arc::params::tension) > 0.7f || v.at (arc::params::chaos) > 0.46f
-            || v.at (arc::params::coupling) < 0.15f || v.at (arc::params::coupling) > 0.7f)
+            || v.at (arc::params::coupling) < 0.08f || v.at (arc::params::coupling) > 0.92f)
             ++outside;
 
         p.prepareToPlay (kSr, kBlock);

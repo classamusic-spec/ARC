@@ -140,7 +140,8 @@ void NodeInspector::refresh()
         return;
     const char* names[4] = { "A", "B", "C", "D" };
     const float ratio = model.nodeRatio[(size_t) node];
-    setTitle (juce::String ("Node ") + names[node], "RATIO " + juce::String::charToString (0x00d7) + juce::String (ratio, 2));
+    setTitle (juce::String ("Node ") + names[node],
+              "RATIO " + (ratio > 0.0f ? juce::String::charToString (0x00d7) + juce::String (ratio, 2) : juce::String::fromUTF8 ("\xe2\x80\x94")));
     hasGesture = processor.getGesture (node).valid;
     clear.setEnabled (hasGesture);
     clear.setAlpha (hasGesture ? 1.0f : 0.35f);

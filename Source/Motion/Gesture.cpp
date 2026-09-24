@@ -87,7 +87,7 @@ Gesture buildGesture (const std::vector<GestureSample>& raw, double beatsPerSeco
             ++k;
         const double ta = raw[k].timeSeconds, tb = raw[k + 1].timeSeconds;
         const double f = tb > ta ? std::clamp ((t - ta) / (tb - ta), 0.0, 1.0) : 0.0;
-        r[static_cast<size_t> (p)] = raw[k].radius + f * (raw[k + 1].radius - raw[k].radius);
+        r[static_cast<size_t> (p)] = static_cast<double> (raw[k].radius) + f * static_cast<double> (raw[k + 1].radius - raw[k].radius);
         a[static_cast<size_t> (p)] = ang[k] + f * (ang[k + 1] - ang[k]);
     }
 
@@ -157,8 +157,8 @@ Gesture orbitGesture (float seconds, float beats, float turns, float radiusWobbl
     for (int i = 0; i < Gesture::kPoints; ++i)
     {
         const double t = static_cast<double> (i) / Gesture::kPoints;
-        g.dAngle[static_cast<size_t> (i)] = wrapAngle (static_cast<float> (2.0 * kPi * turns * t));
-        g.dRadius[static_cast<size_t> (i)] = radiusWobble * static_cast<float> (std::sin (2.0 * kPi * wobbleCycles * t));
+        g.dAngle[static_cast<size_t> (i)] = wrapAngle (static_cast<float> (2.0 * kPi * static_cast<double> (turns) * t));
+        g.dRadius[static_cast<size_t> (i)] = radiusWobble * static_cast<float> (std::sin (2.0 * kPi * static_cast<double> (wobbleCycles) * t));
     }
     g.durationSeconds = std::max (0.05f, seconds);
     g.durationBeats = std::max (0.0f, beats);

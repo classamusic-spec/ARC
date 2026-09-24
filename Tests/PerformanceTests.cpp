@@ -53,7 +53,7 @@ double measureRealtimeFraction (double sr, int voices, arc::ExciterType ex, floa
 TEST_CASE ("performance", "engine cpu by voices, exciter and sample rate")
 {
     std::ofstream csv (outputDir() + "/cpu_profile.csv");
-    csv << "sampleRate,voices,exciter,coupling,chaos,realtimeFraction\n";
+    csv << "sampleRate,voices,exciter,coupling,chaos,motion,quality,realtimeFraction\n";
     for (double sr : { 44100.0, 48000.0, 96000.0 })
         for (auto ex : { arc::ExciterType::strike, arc::ExciterType::bow })
             for (int voices : { 1, 4, 8, 16 })
@@ -62,21 +62,26 @@ TEST_CASE ("performance", "engine cpu by voices, exciter and sample rate")
                 const std::string tag = std::to_string (static_cast<int> (sr / 1000.0)) + "k." + (ex == arc::ExciterType::strike ? "strike" : "bow")
                                         + "." + std::to_string (voices) + "v";
                 MEASURE (tag + ".percentOfCore", f * 100.0);
-                csv << sr << "," << voices << "," << (ex == arc::ExciterType::strike ? "strike" : "bow") << ",0.35,0.1," << f << "\n";
+                csv << sr << "," << voices << "," << (ex == arc::ExciterType::strike ? "strike" : "bow") << ",0.35,0.1,0,normal," << f << "\n";
                 if (sr == 48000.0 && voices == 16)
-                    CHECK (f < 0.5); // 16 voices must fit comfortably in one core at 48 kHz
+                    CHECK (! timingChecksEnabled || f < 0.5); // 16 voices must fit comfortably in one core at 48 kHz
             }
-    // Coupling / chaos / motion extremes at 48 kHz, 8 voices.
-    for (auto cfg : { std::make_tuple (0.0f, 0.0f, 0.0f), std::make_tuple (1.0f, 0.0f, 0.0f), std::make_tuple (0.35f, 1.0f, 0.0f),
-                      std::make_tuple (0.35f, 0.1f, 1.0f) })
-    {
-        const auto [c, ch, mo] = cfg;
-        const double f = measureRealtimeFraction (48000.0, 8, arc::ExciterType::bow, c, ch, mo);
-        MEASURE ("48k.bow.8v.coupling" + std::to_string (c).substr (0, 4) + ".chaos" + std::to_string (ch).substr (0, 3)
-                     + ".motion" + std::to_string (mo).substr (0, 3) + ".percentOfCore",
-                 f * 100.0);
-        csv << 48000 << ",8,bow," << c << "," << ch << "," << f << "\n";
-    }
+    // Coupling / chaos / motion extremes at 48 kHz, 8 and 16 voices, both exciter families.
+    for (auto ex : { arc::ExciterType::strike, arc::ExciterType::bow })
+        for (int voices : { 8, 16 })
+            for (auto cfg : { std::make_tuple (0.0f, 0.0f, 0.0f), std::make_tuple (1.0f, 0.0f, 0.0f), std::make_tuple (0.35f, 1.0f, 0.0f),
+                              std::make_tuple (0.35f, 0.1f, 1.0f) })
+            {
+                const auto [c, ch, mo] = cfg;
+                const double f = measureRealtimeFraction (48000.0, voices, ex, c, ch, mo);
+                const std::string exName = ex == arc::ExciterType::strike ? "strike" : "bow";
+                MEASURE ("48k." + exName + "." + std::to_string (voices) + "v.coupling" + std::to_string (c).substr (0, 4) + ".chaos"
+                             + std::to_string (ch).substr (0, 3) + ".motion" + std::to_string (mo).substr (0, 3) + ".percentOfCore",
+                         f * 100.0);
+                csv << 48000 << "," << voices << "," << exName << "," << c << "," << ch << "," << mo << ",normal," << f << "\n";
+                if (voices == 16)
+                    CHECK (! timingChecksEnabled || f < 0.5);
+            }
     // QUALITY must be a real trade-off: each step roughly halves / doubles the cost.
     std::array<double, 3> cost {};
     for (auto q : { arc::Quality::eco, arc::Quality::normal, arc::Quality::high })
@@ -88,10 +93,10 @@ TEST_CASE ("performance", "engine cpu by voices, exciter and sample rate")
         cost[(size_t) q] = f;
         const char* name = q == arc::Quality::eco ? "Eco" : q == arc::Quality::normal ? "Normal" : "High";
         MEASURE (std::string ("48k.bow.16v.quality") + name + ".percentOfCore", f * 100.0);
-        csv << "48000,16,bow-quality-" << name << ",0.35,0.1," << f << "\n";
+        csv << "48000,16,bow,0.35,0.1,0," << name << "," << f << "\n";
     }
-    CHECK (cost[0] < cost[1] * 0.9);
-    CHECK (cost[1] < cost[2] * 0.8);
+    CHECK (! timingChecksEnabled || cost[0] < cost[1] * 0.9);
+    CHECK (! timingChecksEnabled || cost[1] < cost[2] * 0.8);
 }
 
 TEST_CASE ("performance", "quality modes sound alike and switch live without clicks")

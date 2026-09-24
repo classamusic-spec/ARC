@@ -72,6 +72,13 @@ inline void recordFailure (const char* file, int line, const std::string& what)
     std::fprintf (stderr, "%s\n", os.str().c_str());
 }
 
+/** Timing checks are not meaningful in sanitizer builds (they are still measured). */
+#if defined(ARC_SANITIZED)
+inline constexpr bool timingChecksEnabled = false;
+#else
+inline constexpr bool timingChecksEnabled = true;
+#endif
+
 inline void measure (const std::string& key, double value)
 {
     auto& c = context();

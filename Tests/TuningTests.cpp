@@ -161,10 +161,15 @@ TEST_CASE ("tuning", "node radius and quantise")
 
 TEST_CASE ("tuning", "coupling compensation keeps pitch")
 {
-    for (auto m : { arc::MaterialType::glass, arc::MaterialType::metal, arc::MaterialType::wood })
-        for (float coupling : { 0.2f, 0.35f, 0.5f })
+    // Every material over the whole COUPLING range. The knob ends where compensation can
+    // still hold the note (NETWORK_COUPLING 6.2): <= 1.5 cents up to 0.65, and the note
+    // stays the dominant partial with at most a few cents of stretch at the very top.
+    double worstLow = 0, worstHigh = 0;
+    for (auto m : { arc::MaterialType::glass, arc::MaterialType::metal, arc::MaterialType::wood, arc::MaterialType::membrane })
+        for (float coupling : { 0.2f, 0.35f, 0.5f, 0.65f, 0.8f, 1.0f })
         {
             double cents[2];
+            RigResult rendered;
             for (int comp = 0; comp < 2; ++comp)
             {
                 auto s = defaultRig();
@@ -172,14 +177,29 @@ TEST_CASE ("tuning", "coupling compensation keeps pitch")
                 s.coupling = coupling;
                 s.compensation = comp == 1;
                 s.releaseDamping = 0.0f;
-                const auto r = renderVoice (s, 60, 0.8f, 2.5, 2.5, kSr);
+                auto r = renderVoice (s, 60, 0.8f, 2.5, 2.5, kSr);
                 cents[comp] = settledCents (r, 60, 0.4, 1.8);
+                if (comp == 1)
+                    rendered = std::move (r);
             }
             const std::string tag = std::string (materialName (m)) + ".coupling" + std::to_string (coupling).substr (0, 4);
             MEASURE (tag + ".uncompensatedCents", cents[0]);
             MEASURE (tag + ".compensatedCents", cents[1]);
-            CHECK_MSG (std::abs (cents[1]) < 1.5, tag << " " << cents[1]);
+            const bool top = coupling > 0.65f;
+            (top ? worstHigh : worstLow) = std::max (top ? worstHigh : worstLow, std::abs (cents[1]));
+            CHECK_MSG (std::abs (cents[1]) < (top ? 8.0 : 1.5), tag << " " << cents[1]);
+
+            // The note is the dominant partial around it (no composite mode takes over).
+            const double f0 = arc::dsp::midiToHz (60);
+            const auto spec = computeSpectrum (rendered.mono, kSr, 1 << 18, static_cast<int> (0.4 * kSr), static_cast<int> (1.8 * kSr));
+            double atNote = 0, strongest = 0;
+            peakFrequency (spec, f0 * 0.96, f0 * 1.04, &atNote);
+            peakFrequency (spec, f0 * 0.5, f0 * 1.9, &strongest);
+            MEASURE (tag + ".noteVsStrongest_dB", 20.0 * std::log10 (atNote / strongest));
+            CHECK_MSG (atNote > strongest * 0.7, tag << " note is not the dominant partial");
         }
+    MEASURE ("worstCents_upTo0.65", worstLow);
+    MEASURE ("worstCents_0.8to1.0", worstHigh);
 }
 
 TEST_CASE ("tuning", "compensation converges near unison")
@@ -192,7 +212,7 @@ TEST_CASE ("tuning", "compensation converges near unison")
     double worstWobble = 0, worstTailRise = -1e9, worstLateSlope = -1e9;
     int cases = 0;
     for (auto topology : { arc::dsp::Topology::ring, arc::dsp::Topology::web })
-        for (float coupling : { 0.35f, 0.5f, 0.7f })
+        for (float coupling : { 0.35f, 0.5f, 0.7f, 1.0f })
             for (float ratio : { 0.97f, 0.985f, 0.995f, 1.0f, 1.005f, 1.015f, 1.03f })
             {
                 arc::ArcEngine e;

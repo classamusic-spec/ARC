@@ -21,21 +21,21 @@ inline constexpr int kBaseHeight = 900;
 namespace colours
 {
 // Silver chassis
-inline const juce::Colour chassisHigh { 0xffeceef0 };
-inline const juce::Colour chassisMid { 0xffd6d9dd };
-inline const juce::Colour chassisLow { 0xffb9bec4 };
-inline const juce::Colour chassisEdge { 0xff8f959c };
-inline const juce::Colour panelFace { 0xffe3e5e8 };
-inline const juce::Colour panelFaceLow { 0xffd3d6da };
-inline const juce::Colour bevelLight { 0xfffbfcfd };
-inline const juce::Colour bevelDark { 0xff9aa0a7 };
-inline const juce::Colour hairline { 0xffb5bac0 };
+inline const juce::Colour chassisHigh { 0xffe3e7ec };
+inline const juce::Colour chassisMid { 0xffcbd0d7 };
+inline const juce::Colour chassisLow { 0xffb0b7bf };
+inline const juce::Colour chassisEdge { 0xff808891 };
+inline const juce::Colour panelFace { 0xffd8dde3 };
+inline const juce::Colour panelFaceLow { 0xffc7cdd4 };
+inline const juce::Colour bevelLight { 0xfff8fafc };
+inline const juce::Colour bevelDark { 0xff8a929b };
+inline const juce::Colour hairline { 0xffa6adb5 };
 
 // Text on silver
-inline const juce::Colour ink { 0xff252a30 };
-inline const juce::Colour inkSoft { 0xff4b525a };
-inline const juce::Colour inkMuted { 0xff7a818a };
-inline const juce::Colour inkFaint { 0xff9ba1a8 };
+inline const juce::Colour ink { 0xff1c2229 };
+inline const juce::Colour inkSoft { 0xff353c45 };
+inline const juce::Colour inkMuted { 0xff5d6570 };
+inline const juce::Colour inkFaint { 0xff828a94 };
 
 // Graphite (chamber, selected controls, displays)
 inline const juce::Colour chamberDeep { 0xff05070a };

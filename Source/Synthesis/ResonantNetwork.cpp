@@ -319,7 +319,10 @@ std::array<ResonantNetwork::ModeCorrection, kNumNodes>
         // Mode condition at the intended frequency w: the loop must provide phase
         // 2 pi + arg(R) there, i.e. a loop tuned to f / (1 + arg(R) / 2 pi) (exact for a
         // loop whose phase delay is flat between its tuning and w, as at the fundamental).
-        out[static_cast<size_t> (i)].frequencyShift = clamp (taper * std::arg (rr) / kTwoPi, -0.12, 0.12);
+        // Authority +-30 %: the CORE needs ~15 % at the top of the COUPLING range; the
+        // earlier +-12 % bound was what detuned the note beyond it (NETWORK_COUPLING 6.2).
+        constexpr double kAuthority = 0.30;
+        out[static_cast<size_t> (i)].frequencyShift = clamp (taper * std::arg (rr) / kTwoPi, -kAuthority, kAuthority);
         out[static_cast<size_t> (i)].gainFactor = clamp (1.0 + taper * (std::abs (rr) - 1.0), 0.2, 1.0);
     }
     return out;

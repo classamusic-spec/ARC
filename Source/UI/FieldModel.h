@@ -22,7 +22,7 @@ struct FieldModel
     std::array<float, 10> flowPhase {};  // pulse phase per edge (advances with flux)
     std::array<float, 4> nodeRadius { 0.5f, 0.5f, 0.5f, 0.5f };
     std::array<float, 4> nodeAngle {};   // radians, 0 = up
-    std::array<float, 4> nodeRatio { 1.0f, 1.0f, 1.0f, 1.0f };
+    std::array<float, 4> nodeRatio {}; // 0 until the engine has published (no audio yet)
     float exciterGlow = 0.0f;
     float activity = 0.0f;
     float freeze = 0.0f;
@@ -64,7 +64,10 @@ struct FieldModel
             const float flux = Telemetry::load (t.edgeFlux[i]);
             const float target = energyToGlow (flux * 4.0f);
             edgeGlow[i] = smoothTowards (edgeGlow[i], target, dt, target > edgeGlow[i] ? 0.04f : 0.3f);
-            const float s = std::sqrt (juce::jmax (0.0f, Telemetry::load (t.edgeStrength[i]))) / 0.99f;
+            // sin(phi) of the rotation in use; full COUPLING (0.73 rad, sin 0.67) reads as
+            // full weight, the default (~0.2) is left where it was.
+            const float sn = std::sqrt (juce::jmax (0.0f, Telemetry::load (t.edgeStrength[i])));
+            const float s = sn + 1.18f * sn * sn * sn;
             edgeStrength[i] = smoothTowards (edgeStrength[i], juce::jlimit (0.0f, 1.0f, s), dt, 0.08f);
             if (! freezeFlows)
                 flowPhase[i] = std::fmod (flowPhase[i] + dt * (0.08f + 0.9f * edgeGlow[i]), 1.0f);
@@ -73,7 +76,8 @@ struct FieldModel
         {
             nodeRadius[i] = Telemetry::load (t.nodeRadius[i]);
             nodeAngle[i] = Telemetry::load (t.nodeAngle[i]);
-            nodeRatio[i] = Telemetry::load (t.nodeRatio[i]);
+            if (const float r = Telemetry::load (t.nodeRatio[i]); r > 0.0f)
+                nodeRatio[i] = r;
         }
         exciterGlow = smoothTowards (exciterGlow, energyToGlow (Telemetry::load (t.exciterEnergy) * 10.0f), dt, 0.08f);
         activity = smoothTowards (activity, Telemetry::load (t.networkActivity), dt, 0.15f);

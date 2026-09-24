@@ -3,7 +3,10 @@
 
 #include "ArcTest.h"
 
+#include <atomic>
+#include <chrono>
 #include <filesystem>
+#include <thread>
 
 #include "Core/Parameters.h"
 #include "PluginEditor.h"
@@ -124,6 +127,13 @@ TEST_CASE ("ui", "field frame cost")
         play (proc, ed, 0.5, { 48, 55, 60, 64 }, true);
         auto& field = ed->getField();
         juce::Image target (juce::Image::ARGB, field.getWidth() * 2, field.getHeight() * 2, true);
+        {
+            // Warm-up frame: builds the static layer and sprites for this size (a one-off
+            // cost on resize), so the timing below is the steady per-frame cost.
+            juce::Graphics g (target);
+            g.addTransform (juce::AffineTransform::scale (2.0f));
+            field.paintEntireComponent (g, false);
+        }
         const int frames = 60;
         const auto t0 = juce::Time::getMillisecondCounterHiRes();
         for (int i = 0; i < frames; ++i)
@@ -136,7 +146,7 @@ TEST_CASE ("ui", "field frame cost")
         const double ms = (juce::Time::getMillisecondCounterHiRes() - t0) / frames;
 
         MEASURE ("fieldFrameMs_2x_width" + std::to_string (w), ms);
-        CHECK (ms < 16.0);
+        CHECK (! arctest::timingChecksEnabled || ms < 16.0);
     }
 }
 
@@ -287,4 +297,108 @@ TEST_CASE ("ui", "selector tiles, random and freeze drive the parameters")
     rnd->mouseUp (mouse (*rnd, centre, centre, {}, 1, false));
     MEASURE ("couplingAfterRandom", param (proc, arc::params::coupling));
     CHECK (std::abs (param (proc, arc::params::coupling) - c0) > 1.0e-4f);
+}
+
+TEST_CASE ("ui", "audio cost with the editor closed and open")
+{
+    // The performance matrix's GUI closed / open column. A real-time paced audio thread
+    // holds an 8-voice bowed chord while the message thread either idles or runs the editor
+    // at 60 fps, repainting what the editor invalidates each frame (field and meter every
+    // frame; preset display and status every 6th) the way a host paints dirty regions, and
+    // separately the cost of a full-window repaint (open / resize). Under ThreadSanitizer
+    // this is also the race test for editor frames against live audio.
+    struct Result
+    {
+        double audioFraction = 0, frameMs = 0, guiLoad = 0, fullWindowMs = 0;
+        int frames = 0;
+    };
+    auto measure = [] (bool withEditor)
+    {
+        ArcAudioProcessor proc;
+        auto& pm = proc.getPresetManager();
+        pm.loadPreset (pm.findPreset ("factory/Obsidian Bloom"));
+        constexpr int block = 256;
+        proc.prepareToPlay (kSr, block);
+        std::unique_ptr<juce::AudioProcessorEditor> base;
+        ArcAudioProcessorEditor* ed = nullptr;
+        std::vector<juce::Rectangle<int>> everyFrame, everySixth;
+        if (withEditor)
+        {
+            base.reset (proc.createEditor());
+            ed = dynamic_cast<ArcAudioProcessorEditor*> (base.get());
+            ed->setSize (1200, 900);
+            auto area = [ed] (const char* id)
+            {
+                auto* c = findById (*ed, id);
+                return c != nullptr ? ed->getLocalArea (c, c->getLocalBounds()) : juce::Rectangle<int>();
+            };
+            everyFrame = { area ("field"), area ("meter") };
+            everySixth = { area ("presetDisplay"), area ("status") };
+        }
+        std::atomic<bool> done { false };
+        double cpuSeconds = 0;
+        const int blocks = (int) (3.0 * kSr / block);
+        std::thread audio ([&]
+                           {
+                               juce::AudioBuffer<float> buffer (2, block);
+                               juce::MidiBuffer midi;
+                               const auto period = std::chrono::duration<double> (block / kSr);
+                               auto deadline = std::chrono::steady_clock::now();
+                               for (int b = 0; b < blocks; ++b)
+                               {
+                                   midi.clear();
+                                   if (b == 0)
+                                       for (int n : { 36, 43, 48, 55, 60, 63, 67, 70 })
+                                           midi.addEvent (juce::MidiMessage::noteOn (1, n, 0.8f), 0);
+                                   buffer.clear();
+                                   const auto t0 = std::chrono::steady_clock::now();
+                                   proc.processBlock (buffer, midi);
+                                   cpuSeconds += std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
+                                   deadline += std::chrono::duration_cast<std::chrono::steady_clock::duration> (period);
+                                   std::this_thread::sleep_until (deadline);
+                               }
+                               done.store (true);
+                           });
+        Result r;
+        double guiMs = 0;
+        const auto start = juce::Time::getMillisecondCounterHiRes();
+        while (! done.load())
+        {
+            const auto t0 = juce::Time::getMillisecondCounterHiRes();
+            if (ed != nullptr)
+            {
+                ed->advanceFrame (1.0 / 60.0);
+                for (auto& a : everyFrame)
+                    juce::ignoreUnused (ed->createComponentSnapshot (a, true, 1.0f));
+                if (r.frames % 6 == 0)
+                    for (auto& a : everySixth)
+                        juce::ignoreUnused (ed->createComponentSnapshot (a, true, 1.0f));
+                guiMs += juce::Time::getMillisecondCounterHiRes() - t0;
+                if (++r.frames % 30 == 0)
+                {
+                    const auto f0 = juce::Time::getMillisecondCounterHiRes();
+                    juce::ignoreUnused (ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f));
+                    r.fullWindowMs = juce::Time::getMillisecondCounterHiRes() - f0;
+                }
+            }
+            juce::Thread::sleep (juce::jmax (1, (int) (1000.0 / 60.0 - (juce::Time::getMillisecondCounterHiRes() - t0))));
+        }
+        audio.join();
+        r.audioFraction = cpuSeconds / (blocks * block / kSr);
+        r.frameMs = r.frames > 0 ? guiMs / r.frames : 0.0;
+        r.guiLoad = guiMs / (juce::Time::getMillisecondCounterHiRes() - start);
+        return r;
+    };
+    const auto closed = measure (false);
+    const auto open = measure (true);
+    MEASURE ("guiClosed.audioPercentOfCore", closed.audioFraction * 100.0);
+    MEASURE ("guiOpen.audioPercentOfCore", open.audioFraction * 100.0);
+    MEASURE ("guiOpen.framesDrawn", open.frames);
+    MEASURE ("guiOpen.frameMs", open.frameMs);
+    MEASURE ("guiOpen.messageThreadLoadPercent", open.guiLoad * 100.0);
+    MEASURE ("guiOpen.fullWindowRepaintMs", open.fullWindowMs);
+    CHECK (open.frames > (arctest::timingChecksEnabled ? 60 : 5)); // sanitizers slow frames ~100x
+    // The editor must not slow the audio thread: it only reads relaxed atomics.
+    CHECK (! arctest::timingChecksEnabled || open.audioFraction < closed.audioFraction * 1.5 + 0.02);
+    CHECK (! arctest::timingChecksEnabled || open.frameMs < 8.0);
 }

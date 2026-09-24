@@ -76,7 +76,7 @@ void mutate (ValueMap& v, juce::Random& rng)
     };
 
     nudge (params::excite, 0.04f, 0.35f, 0.9f, 0.6f);
-    nudge (params::coupling, 0.05f, 0.1f, 0.75f, 0.35f);
+    nudge (params::coupling, 0.05f, 0.05f, 0.95f, 0.35f);
     nudge (params::tension, 0.035f, 0.3f, 0.72f, 0.5f);
     nudge (params::chaos, 0.04f, 0.0f, 0.6f, 0.1f);
 
@@ -159,7 +159,7 @@ void regenerate (ValueMap& v, juce::Random& rng)
     v[params::excite] = uniform (rng, 0.5f, 0.72f);
     {
         const float a = rng.nextFloat(), b = rng.nextFloat();
-        v[params::coupling] = 0.15f + 0.55f * 0.5f * (a + b); // triangular around 0.425
+        v[params::coupling] = 0.08f + 0.84f * 0.5f * (a + b); // triangular around 0.5 (the whole range is in tune)
     }
     const float tension = juce::jlimit (0.34f, 0.66f, 0.5f + 0.07f * gauss (rng));
     v[params::tension] = tension;

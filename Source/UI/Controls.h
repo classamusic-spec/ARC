@@ -61,7 +61,7 @@ private:
     KnobSlider slider;
     KnobStyle style;
     juce::String name;
-    juce::Colour labelColour { colours::inkSoft };
+    juce::Colour labelColour { colours::ink };
     std::function<juce::String (double)> formatter;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
 };

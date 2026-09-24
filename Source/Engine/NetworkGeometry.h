@@ -17,11 +17,14 @@ namespace arc
 /** Default angles (radians, 0 = up, clockwise): A top-left, B top-right, C bottom-left, D bottom-right. */
 inline constexpr std::array<float, 4> kDefaultNodeAngles { -0.785398f, 0.785398f, -2.356194f, 2.356194f };
 
-/** COUPLING macro (0..1) -> maximum per-edge rotation (radians). */
+/** COUPLING macro (0..1) -> maximum per-edge rotation (radians). The whole knob stays
+    inside the range where coupling compensation keeps the note in tune on every material
+    (0.728 rad; beyond it the CORE dissolves into composite modes, NETWORK_COUPLING 6.2).
+    The default 0.35 still maps to 0.270 rad. */
 inline float couplingToRotation (float coupling) noexcept
 {
     const float c = std::fmin (std::fmax (coupling, 0.0f), 1.0f);
-    return 1.45f * std::pow (c, 1.6f);
+    return 0.7277f * std::pow (c, 0.9432f);
 }
 
 /** Node radius parameter (0..1) -> field radius (0.3..0.9 of the chamber radius). */

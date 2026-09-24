@@ -90,7 +90,7 @@ void paintChassis (juce::Graphics& g, juce::Rectangle<float> bounds, float corne
     {
         juce::Graphics::ScopedSaveState s (g);
         g.reduceClipRegion (platePath);
-        juce::ColourGradient sheen (juce::Colours::white.withAlpha (0.55f), plate.getCentreX(), plate.getY() - plate.getHeight() * 0.1f,
+        juce::ColourGradient sheen (juce::Colours::white.withAlpha (0.42f), plate.getCentreX(), plate.getY() - plate.getHeight() * 0.1f,
                                     juce::Colours::white.withAlpha (0.0f), plate.getCentreX(), plate.getY() + plate.getHeight() * 0.55f,
                                     true);
         g.setGradientFill (sheen);
@@ -122,7 +122,7 @@ void paintRaisedPlate (juce::Graphics& g, const juce::Path& shape, float shadowR
     {
         juce::Graphics::ScopedSaveState s (g);
         g.reduceClipRegion (shape);
-        juce::ColourGradient sheen (juce::Colours::white.withAlpha (0.45f), r.getX(), r.getY(), juce::Colours::white.withAlpha (0.0f),
+        juce::ColourGradient sheen (juce::Colours::white.withAlpha (0.36f), r.getX(), r.getY(), juce::Colours::white.withAlpha (0.0f),
                                     r.getX() + r.getWidth() * 0.6f, r.getY() + r.getHeight() * 0.6f, false);
         g.setGradientFill (sheen);
         g.fillRect (r);

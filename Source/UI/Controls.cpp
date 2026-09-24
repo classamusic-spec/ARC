@@ -65,7 +65,8 @@ void ArcKnob::paint (juce::Graphics& g)
     auto labelArea = getLocalBounds().toFloat().withTop ((float) slider.getBottom() + (style == KnobStyle::macro ? 2.0f : 0.0f));
     const auto colour = active ? (style == KnobStyle::glass ? colours::cyanBright : colours::cyanDim.darker (0.25f)) : labelColour;
     g.setColour (colour);
-    drawTrackedText (g, currentText().toUpperCase(), labelArea, Fonts::label (fontSize), juce::Justification::centredTop);
+    const auto font = style == KnobStyle::macro ? Fonts::get (Fonts::Weight::medium, fontSize, 0.18f) : Fonts::label (fontSize);
+    drawTrackedText (g, currentText().toUpperCase(), labelArea, font, juce::Justification::centredTop);
 }
 
 void ArcKnob::resized()
@@ -117,29 +118,32 @@ void SelectorTile::paintButton (juce::Graphics& g, bool over, bool down)
     }
     else
     {
-        juce::ColourGradient face (over ? juce::Colour (0xfff1f2f4) : juce::Colour (0xffe9ebee), r.getX(), r.getY(),
-                                   over ? juce::Colour (0xffdadde1) : juce::Colour (0xffd5d8dc), r.getX(), r.getBottom(), false);
+        juce::ColourGradient face (colours::panelFace.brighter (over ? 0.16f : 0.1f), r.getX(), r.getY(),
+                                   colours::panelFaceLow.brighter (over ? 0.06f : 0.0f), r.getX(), r.getBottom(), false);
         g.setGradientFill (face);
         g.fillRoundedRectangle (r, radius);
-        g.setColour (juce::Colours::white.withAlpha (0.9f));
+        g.setColour (juce::Colours::white.withAlpha (0.75f));
         g.drawRoundedRectangle (r.reduced (1.0f).translated (0.0f, 0.5f), radius - 1.0f, 1.0f);
-        g.setColour (over ? colours::inkFaint : colours::hairline);
+        g.setColour ((over ? colours::inkMuted : colours::bevelDark).withAlpha (0.9f));
         g.drawRoundedRectangle (r, radius, 1.0f);
     }
 
     // Content: icon + label (full), or a smaller centred icon + label (compact).
     const float h = r.getHeight();
-    const float iconSize = juce::jlimit (14.0f, 30.0f, h * (0.46f - 0.08f * compact));
+    const float iconSize = juce::jlimit (14.0f, 32.0f, h * (0.54f - 0.12f * compact));
     const float iconX = r.getX() + juce::jmax (18.0f, r.getWidth() * 0.2f) - iconSize * 0.5f;
     const auto iconArea = juce::Rectangle<float> (iconX, r.getCentreY() - iconSize * 0.5f, iconSize, iconSize);
     const auto iconColour = selected ? colours::cyanBright : (over ? colours::ink : colours::inkSoft);
     if (selected)
-        gfx::drawIcon (g, icon, iconArea, colours::cyan.withAlpha (0.25f), 3.6f);
-    gfx::drawIcon (g, icon, iconArea, iconColour, selected ? 1.4f : 1.25f);
+    {
+        gfx::drawIcon (g, icon, iconArea, colours::cyan.withAlpha (0.12f), 6.5f);
+        gfx::drawIcon (g, icon, iconArea, colours::cyan.withAlpha (0.3f), 3.4f);
+    }
+    gfx::drawIcon (g, icon, iconArea, iconColour, selected ? 1.5f : 1.3f);
 
     auto textArea = r.withLeft (iconArea.getRight() + juce::jmax (12.0f, r.getWidth() * 0.1f));
-    g.setColour (selected ? colours::glassText : (over ? colours::ink : colours::inkSoft));
-    drawTrackedText (g, getName().toUpperCase(), textArea, Fonts::label (juce::jlimit (10.0f, 13.0f, h * 0.22f)),
+    g.setColour (selected ? colours::glassText : colours::ink);
+    drawTrackedText (g, getName().toUpperCase(), textArea, Fonts::label (juce::jlimit (10.0f, 13.5f, h * 0.25f)),
                      juce::Justification::centredLeft);
 }
 
@@ -174,11 +178,11 @@ void RoundButton::paintButton (juce::Graphics& g, bool over, bool down)
     g.fillEllipse (circle);
     // Face
     const auto face = circle.reduced (d * 0.07f);
-    juce::ColourGradient fg (down ? juce::Colour (0xffcfd3d7) : (over ? juce::Colour (0xfff0f2f4) : juce::Colour (0xffe7e9ec)), face.getX(),
-                             face.getY(), down ? juce::Colour (0xffe2e5e8) : juce::Colour (0xffd3d7db), face.getX(), face.getBottom(), false);
+    juce::ColourGradient fg (down ? colours::panelFaceLow : colours::panelFace.brighter (over ? 0.18f : 0.12f), face.getX(), face.getY(),
+                             down ? colours::panelFace.brighter (0.05f) : colours::panelFaceLow, face.getX(), face.getBottom(), false);
     g.setGradientFill (fg);
     g.fillEllipse (face);
-    g.setColour (on ? colours::cyan.withAlpha (0.4f + 0.6f * glow) : colours::hairline);
+    g.setColour (on ? colours::cyan.withAlpha (0.4f + 0.6f * glow) : colours::bevelDark.withAlpha (0.8f));
     g.drawEllipse (face, on ? 1.4f : 0.9f);
 
     const auto iconArea = face.reduced (d * 0.25f);
@@ -186,8 +190,8 @@ void RoundButton::paintButton (juce::Graphics& g, bool over, bool down)
         gfx::drawIcon (g, icon, iconArea, colours::cyan.withAlpha (0.25f * glow), 3.4f);
     gfx::drawIcon (g, icon, iconArea, on ? colours::cyanDim.interpolatedWith (colours::cyan, glow) : (over ? colours::ink : colours::inkSoft), 1.35f);
 
-    g.setColour (on ? colours::cyanDim.darker (0.2f) : colours::inkSoft);
-    drawTrackedText (g, getName().toUpperCase(), b.withTop (b.getBottom() - labelH + 4.0f), Fonts::label (11.0f),
+    g.setColour (on ? colours::cyanDim.darker (0.2f) : colours::ink);
+    drawTrackedText (g, getName().toUpperCase(), b.withTop (b.getBottom() - labelH + 4.0f), Fonts::label (11.5f),
                      juce::Justification::centredTop);
 }
 
@@ -252,7 +256,7 @@ void SegmentedControl::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat().reduced (0.5f);
     const float radius = r.getHeight() * 0.5f;
-    g.setColour (glass ? colours::chamberDeep.withAlpha (0.8f) : juce::Colour (0xffd2d6da));
+    g.setColour (glass ? colours::chamberDeep.withAlpha (0.8f) : colours::panelFaceLow);
     g.fillRoundedRectangle (r, radius);
     g.setColour (glass ? colours::graphiteLine : colours::hairline);
     g.drawRoundedRectangle (r, radius, 1.0f);
@@ -298,7 +302,7 @@ void ChipToggle::paintButton (juce::Graphics& g, bool over, bool)
     const auto r = getLocalBounds().toFloat().reduced (1.0f);
     const float radius = r.getHeight() * 0.5f;
     const bool on = getToggleState();
-    g.setColour (on ? (glass ? colours::graphiteHigh : colours::graphite) : (glass ? colours::chamberDeep.withAlpha (0.7f) : juce::Colour (0xffdfe2e5)));
+    g.setColour (on ? (glass ? colours::graphiteHigh : colours::graphite) : (glass ? colours::chamberDeep.withAlpha (0.7f) : colours::panelFace));
     g.fillRoundedRectangle (r, radius);
     g.setColour (on ? colours::cyan.withAlpha (0.85f) : (over ? colours::inkFaint : (glass ? colours::graphiteLine : colours::hairline)));
     g.drawRoundedRectangle (r, radius, 1.0f);

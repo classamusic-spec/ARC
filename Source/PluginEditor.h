@@ -140,6 +140,7 @@ private:
     std::unique_ptr<juce::VBlankAttachment> vblank;
     double lastFrameTime = -1.0, lastInteraction = 0.0, lastEngineBeat = -10.0, clock = 0.0;
     uint32_t lastBlockCounter = 0;
+    juce::Point<float> lastMousePosition;
     bool dockPlaced = false, dockAtBottom = false;
     int frameCounter = 0;
 

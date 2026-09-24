@@ -73,7 +73,7 @@ void MotionRateControl::paint (juce::Graphics& g)
     }
     const bool over = isMouseOverOrDragging();
     g.setColour (over ? colours::cyanDim : colours::inkMuted);
-    drawTrackedText (g, (synced() ? "SYNC  " : "RATE  ") + value, b, Fonts::regular (9.5f, 0.2f), juce::Justification::centred);
+    drawTrackedText (g, (synced() ? "SYNC  " : "RATE  ") + value, b, Fonts::regular (10.0f, 0.2f), juce::Justification::centred);
 }
 
 void MotionRateControl::mouseDown (const juce::MouseEvent&)
@@ -133,8 +133,8 @@ void StatusReadout::paint (juce::Graphics& g)
     float y = b.getY();
     for (auto& l : lines)
     {
-        g.setColour (colours::inkMuted);
-        drawTrackedText (g, l, { b.getX(), y, b.getWidth(), 16.0f }, Fonts::regular (9.5f, 0.22f), juce::Justification::centredLeft);
+        g.setColour (colours::inkSoft);
+        drawTrackedText (g, l, { b.getX(), y, b.getWidth(), 16.0f }, Fonts::regular (10.0f, 0.22f), juce::Justification::centredLeft);
         y += 18.0f;
     }
     g.setColour (colours::cyan.withAlpha (0.7f));
@@ -215,6 +215,8 @@ ArcAudioProcessorEditor::ArcAudioProcessorEditor (ArcAudioProcessor& p)
     freeze.setComponentID ("freeze");
     sync.setComponentID ("sync");
     presetDisplay.setComponentID ("presetDisplay");
+    meter.setComponentID ("meter");
+    status.setComponentID ("status");
     for (auto* c : std::initializer_list<juce::Component*> { &presetDisplay, &gear, &meter, &master, &exciter, &material, &field, &motion,
                                                              &motionRate, &excite, &coupling, &tension, &chaos, &freeze, &random, &sync, &status })
         canvas.addAndMakeVisible (*c);
@@ -467,10 +469,9 @@ void ArcAudioProcessorEditor::updateCaption()
                 if (tip.isNotEmpty())
                     break;
             }
-        static juce::Point<float> lastPos;
-        if (mouse.getScreenPosition() != lastPos)
+        if (mouse.getScreenPosition() != lastMousePosition)
         {
-            lastPos = mouse.getScreenPosition();
+            lastMousePosition = mouse.getScreenPosition();
             lastInteraction = clock;
         }
     }

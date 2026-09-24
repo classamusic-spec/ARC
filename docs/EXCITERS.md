@@ -81,6 +81,11 @@ soft-limit each edge's rotation with a tanh knee (0.35 rad on CORE↔node spokes
 on node↔node edges). The default COUPLING is barely affected (−10 %); the top of the
 range now thickens the tone instead of silencing it.
 
+*Release candidate:* COUPLING values in this section and in the playability maps use
+the Phase 9 curve. The knob now ends at the old 0.65 (NETWORK_COUPLING §6.2). BOW and
+AIR speak on every material over the whole new range, in ring and web topologies
+(−21 … −27 dB, within 0.7 cents; MEMBRANE AIR +7 cents from its energy tuning).
+
 ## Playability maps
 `docs/measurements/phase9/playability_maps.txt`: level / HNR (/ centroid) over
 PRESSURE × SPEED for BOW and COUPLING × FLOW for AIR, all four materials, C3.
@@ -88,7 +93,7 @@ PRESSURE × SPEED for BOW and COUPLING × FLOW for AIR, all four materials, C3.
 | | before Phase 9 | after |
 |---|---|---|
 | BOW, PRESSURE × SPEED | speaks only on a diagonal band (pressure ≤ speed); rest silent; METAL at low speed −13 dB of non-harmonic garbage (HNR −65 dB) | speaks everywhere on all materials: SPEED −40 → −19 dB, PRESSURE brightens the centroid by ~45 %, HNR 25–48 dB |
-| AIR, COUPLING ≥ 0.65 (WEB) | silent / noise on GLASS, METAL, WOOD | METAL, MEMBRANE speak at every COUPLING; GLASS up to 0.8 with FLOW ≥ 0.8; WOOD up to 0.65 (at 0.8 it becomes multiphonic — known limitation) |
+| AIR, COUPLING ≥ 0.65 (WEB, Phase 9 units) | silent / noise on GLASS, METAL, WOOD | METAL, MEMBRANE speak at every COUPLING; GLASS up to 0.8 with FLOW ≥ 0.8; WOOD up to 0.65 (at 0.8 it became multiphonic). Since the RC coupling curve the knob ends at the old 0.65, so every material speaks over the whole range |
 
 ## Drive regulation (BOW, AIR)
 An envelope follower on the CORE (10 ms attack / 120 ms release) eases the injected

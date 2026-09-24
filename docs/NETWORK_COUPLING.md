@@ -146,3 +146,58 @@ Authority raised from ±5.9 % to ±12 % (extreme TENSION: worst 1.9 cents, was 8
 Regression test `tuning/compensation converges near unison`: 42 configurations (ring /
 web × coupling 0.35–0.7 × node ratio 0.97–1.03): loop wobble ≤ 0.19 cents (the old
 estimator fails all three checks), released notes decay steadily.
+
+### 6.2 The in-tune limit and the COUPLING curve (release candidate)
+
+The release-candidate validation extended the compensation measurement from COUPLING
+0.5 to the whole knob, and found the top of the range out of tune. With the Phase 9
+curve (`φ = 1.45 c^1.6`), the compensated fundamental was:
+* 12–40 cents off at 0.65;
+* 100–164 cents off at 0.8;
+* up to −186 cents off at 1.0.
+
+At 0.8–1.0 the strongest partial near the note was a composite mode of the network, not
+the note.
+
+**Cause.** A trace of the CORE's correction gave, for glass:
+
+| COUPLING | 0.55 | 0.60 | 0.62 | 0.64 and above |
+|---|---|---|---|---|
+| CORE correction | 7.0 % | 8.7 % | 10.9 % | 12 % (clamped) |
+
+The ±12 % authority bound was reached at COUPLING 0.62–0.64 on every material. Pitch
+was exact up to that point and broke immediately after.
+
+Beyond about φ ≈ 0.75 rad a different, physical limit takes over. The CORE loses most
+of its energy to the nodes every pass. The energy returns in phase only when a
+material's nodes resonate near f0: METAL does, GLASS and WOOD do not. The CORE then
+stops existing as a separate mode. With authority ±40 % on the old curve, GLASS and
+MEMBRANE held pitch to the old maximum. METAL was still −100 cents at the old 0.8, and
+WOOD's fundamental fell 37 dB under a non-octave mode.
+
+**Fix.**
+* **Authority ±30 %.** The CORE needs about 15 % at the new top of the range. The
+  Phase 9 limit-cycle regression (`compensation converges near unison`, now also run at
+  maximum COUPLING) is unchanged: loop wobble 0.18 cents, released notes decay.
+* **COUPLING curve `φ = 0.7277 c^0.9432`.** The knob now ends at the rotation the old
+  curve reached at 0.65, the largest at which every material stays in tune. The
+  default 0.35 still gives 0.270 rad, so the default sound is unchanged. Factory
+  presets were converted value by value to keep their rotation. Only Signal Swarm
+  (formerly 0.66) moves, by −2.4 %, and the preset audit's loudness and distinctness
+  figures are identical.
+* RANDOM's coupling windows were converted to the new units (regeneration 0.08–0.92).
+* The field's connection weight is renormalised so that full COUPLING reads as full
+  weight, and the default reads as before.
+
+**Result** (`tuning/coupling compensation keeps pitch`, all four materials, the whole
+range):
+
+| COUPLING | 0.2 – 0.65 | 0.8 | 1.0 |
+|---|---|---|---|
+| worst compensated error | 1.2 cents | 2.8 cents (metal) | 6.3 cents (metal); glass, wood, membrane ≤ 0.3 |
+| note vs strongest nearby partial | 0 dB | 0 dB | −1.3 dB (metal), −0.8 dB (wood) |
+
+Uncompensated, the same networks drift by up to 175 cents at the top. BOW and AIR now
+speak across the whole range on every material, ring and web: −21 … −27 dB, within
+0.7 cents; MEMBRANE AIR is +7 cents from its energy-dependent tuning. This ends the
+Phase 9 "AIR above COUPLING 0.65" limitation, since that region is now beyond the knob.

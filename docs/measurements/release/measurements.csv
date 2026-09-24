@@ -1,0 +1,688 @@
+test,key,value
+exciters/air and bow hold a steady level,air.glass.tremoloDepthDb,-47.3284
+exciters/air and bow hold a steady level,air.glass.tremoloRateHz,3.90027
+exciters/air and bow hold a steady level,air.metal.tremoloDepthDb,-48.4382
+exciters/air and bow hold a steady level,air.metal.tremoloRateHz,5.46287
+exciters/air and bow hold a steady level,air.wood.tremoloDepthDb,-38.568
+exciters/air and bow hold a steady level,air.wood.tremoloRateHz,5.4854
+exciters/air and bow hold a steady level,air.membrane.tremoloDepthDb,-38.0196
+exciters/air and bow hold a steady level,air.membrane.tremoloRateHz,3.01299
+exciters/air and bow hold a steady level,bow.glass.tremoloDepthDb,-57.7227
+exciters/air and bow hold a steady level,bow.glass.tremoloRateHz,7.32496
+exciters/air and bow hold a steady level,bow.metal.tremoloDepthDb,-58.522
+exciters/air and bow hold a steady level,bow.metal.tremoloRateHz,4.64453
+exciters/air and bow hold a steady level,bow.wood.tremoloDepthDb,-56.5115
+exciters/air and bow hold a steady level,bow.wood.tremoloRateHz,3.7654
+exciters/air and bow hold a steady level,bow.membrane.tremoloDepthDb,-56.4813
+exciters/air and bow hold a steady level,bow.membrane.tremoloRateHz,4.59115
+exciters/strike is a transient impact,glass.earlyMinusLateDb,19.288
+exciters/strike is a transient impact,metal.earlyMinusLateDb,12.3295
+exciters/strike is a transient impact,wood.earlyMinusLateDb,221.176
+exciters/strike is a transient impact,membrane.earlyMinusLateDb,221.335
+exciters/strike is a transient impact,centroid.soft,845.522
+exciters/strike is a transient impact,centroid.hard,2191.21
+exciters/strike is a transient impact,centroid.longContact,1552.34
+exciters/strike is a transient impact,centroid.shortContact,2785.46
+exciters/strike is a transient impact,rms.velocity0.3,0.0228265
+exciters/strike is a transient impact,rms.velocity1.0,0.100648
+exciters/strike is a transient impact,centroid.velocity0.3,1127.43
+exciters/strike is a transient impact,centroid.velocity1.0,1835.13
+exciters/pluck position comb,pos0.25.h3dB,37.5074
+exciters/pluck position comb,pos0.25.h4dB,-2.11257
+exciters/pluck position comb,pos0.25.h5dB,33.1267
+exciters/pluck position comb,pos0.25.h7dB,25.7855
+exciters/pluck position comb,pos0.25.h8dB,-5.0447
+exciters/pluck position comb,pos0.25.h9dB,20.9464
+exciters/pluck position comb,pos0.5.h1dB,46.8497
+exciters/pluck position comb,pos0.5.h2dB,4.65256
+exciters/pluck position comb,pos0.5.h3dB,40.5142
+exciters/pluck position comb,pos0.5.h4dB,-0.3699
+exciters/pluck position comb,centroid.tone0.1,482.887
+exciters/pluck position comb,centroid.tone0.95,1917.13
+exciters/bow is sustained friction not noise,glass.levelDriftDb,0.00559585
+exciters/bow is sustained friction not noise,glass.hnrDb,49.5491
+exciters/bow is sustained friction not noise,glass.flatness,1.65054e-06
+exciters/bow is sustained friction not noise,glass.pitchCents,0.000738101
+exciters/bow is sustained friction not noise,glass.releaseDropDb,63.1611
+exciters/bow is sustained friction not noise,metal.levelDriftDb,0.00308372
+exciters/bow is sustained friction not noise,metal.hnrDb,46.7032
+exciters/bow is sustained friction not noise,metal.flatness,7.19469e-06
+exciters/bow is sustained friction not noise,metal.pitchCents,0.00115799
+exciters/bow is sustained friction not noise,metal.releaseDropDb,58.8912
+exciters/bow is sustained friction not noise,wood.levelDriftDb,0.00704575
+exciters/bow is sustained friction not noise,wood.hnrDb,49.9854
+exciters/bow is sustained friction not noise,wood.flatness,2.59725e-06
+exciters/bow is sustained friction not noise,wood.pitchCents,0.00169766
+exciters/bow is sustained friction not noise,wood.releaseDropDb,219.042
+exciters/bow is sustained friction not noise,membrane.levelDriftDb,-0.00406886
+exciters/bow is sustained friction not noise,membrane.hnrDb,52.342
+exciters/bow is sustained friction not noise,membrane.flatness,7.10448e-07
+exciters/bow is sustained friction not noise,membrane.pitchCents,0.000628989
+exciters/bow is sustained friction not noise,membrane.releaseDropDb,219.278
+exciters/bow is sustained friction not noise,wood.centroid.pressure0.1,557.649
+exciters/bow is sustained friction not noise,wood.centroid.pressure0.9,704.989
+exciters/air is continuous turbulent excitation,glass.flatness.breathy,0.00273445
+exciters/air is continuous turbulent excitation,glass.flatness.tonal,1.69476e-06
+exciters/air is continuous turbulent excitation,glass.releaseDropDb,21.8854
+exciters/air is continuous turbulent excitation,metal.flatness.breathy,0.00885056
+exciters/air is continuous turbulent excitation,metal.flatness.tonal,3.77039e-06
+exciters/air is continuous turbulent excitation,metal.releaseDropDb,16.3873
+exciters/air is continuous turbulent excitation,wood.flatness.breathy,0.0227707
+exciters/air is continuous turbulent excitation,wood.flatness.tonal,1.32002e-05
+exciters/air is continuous turbulent excitation,wood.releaseDropDb,103.981
+exciters/air is continuous turbulent excitation,membrane.flatness.breathy,0.00675437
+exciters/air is continuous turbulent excitation,membrane.flatness.tonal,3.3272e-06
+exciters/air is continuous turbulent excitation,membrane.releaseDropDb,97.6426
+exciters/velocity and EXCITE act per exciter,strike.velocity0.2.rmsDb,-37.7019
+exciters/velocity and EXCITE act per exciter,strike.velocity0.5.rmsDb,-27.764
+exciters/velocity and EXCITE act per exciter,strike.velocity0.8.rmsDb,-22.7326
+exciters/velocity and EXCITE act per exciter,strike.velocity1.0.rmsDb,-20.4969
+exciters/velocity and EXCITE act per exciter,strike.excite.levelGainDb,10.1484
+exciters/velocity and EXCITE act per exciter,strike.excite.centroidRatio,1.68016
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.2.rmsDb,-36.8454
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.5.rmsDb,-27.5693
+exciters/velocity and EXCITE act per exciter,pluck.velocity0.8.rmsDb,-22.8282
+exciters/velocity and EXCITE act per exciter,pluck.velocity1.0.rmsDb,-20.6088
+exciters/velocity and EXCITE act per exciter,pluck.excite.levelGainDb,11.6417
+exciters/velocity and EXCITE act per exciter,pluck.excite.centroidRatio,1.69756
+exciters/velocity and EXCITE act per exciter,bow.velocity0.2.rmsDb,-22.6039
+exciters/velocity and EXCITE act per exciter,bow.velocity0.5.rmsDb,-21.6522
+exciters/velocity and EXCITE act per exciter,bow.velocity0.8.rmsDb,-20.8699
+exciters/velocity and EXCITE act per exciter,bow.velocity1.0.rmsDb,-20.4372
+exciters/velocity and EXCITE act per exciter,bow.excite.levelGainDb,4.51543
+exciters/velocity and EXCITE act per exciter,bow.excite.centroidRatio,0.676143
+exciters/velocity and EXCITE act per exciter,air.velocity0.2.rmsDb,-27.1692
+exciters/velocity and EXCITE act per exciter,air.velocity0.5.rmsDb,-25.6208
+exciters/velocity and EXCITE act per exciter,air.velocity0.8.rmsDb,-24.4299
+exciters/velocity and EXCITE act per exciter,air.velocity1.0.rmsDb,-23.7036
+exciters/velocity and EXCITE act per exciter,air.excite.levelGainDb,4.54016
+exciters/velocity and EXCITE act per exciter,air.excite.centroidRatio,0.972647
+host/block sizes from 1 to 4096 render the same sound,maxDifferenceAcrossBlockSizes,0
+host/sample-rate changes and re-prepare mid-session,rmsDb@44100,-25.3064
+host/sample-rate changes and re-prepare mid-session,rmsDb@96000,-26.2282
+host/sample-rate changes and re-prepare mid-session,rmsDb@48000,-25.0532
+host/sample-rate changes and re-prepare mid-session,rmsDb@192000,-25.638
+host/sample-rate changes and re-prepare mid-session,rmsDb@22050,-27.4355
+host/sample-rate changes and re-prepare mid-session,rmsDb@88200,-26.3853
+host/sample-rate changes and re-prepare mid-session,peak,0.180211
+host/multiple instances are independent,instanceIsolationMaxDiff,0
+docs/parameter table,parameters,65
+materials/materials are measurably different,glass.t60_fundamental,5.1599
+materials/materials are measurably different,glass.centroidHz,1148.44
+materials/materials are measurably different,glass.inharmonicity,0.0597679
+materials/materials are measurably different,metal.t60_fundamental,8.24164
+materials/materials are measurably different,metal.centroidHz,1005.22
+materials/materials are measurably different,metal.inharmonicity,0.110467
+materials/materials are measurably different,wood.t60_fundamental,0.924911
+materials/materials are measurably different,wood.centroidHz,572.454
+materials/materials are measurably different,wood.inharmonicity,0.0338084
+materials/materials are measurably different,membrane.t60_fundamental,0.855209
+materials/materials are measurably different,membrane.centroidHz,417.413
+materials/materials are measurably different,membrane.inharmonicity,0.0968267
+materials/materials are measurably different,lsd.glass_vs_metal,26.8961
+materials/materials are measurably different,lsd.glass_vs_wood,29.4475
+materials/materials are measurably different,lsd.glass_vs_membrane,42.8966
+materials/materials are measurably different,lsd.metal_vs_wood,32.298
+materials/materials are measurably different,lsd.metal_vs_membrane,32.3318
+materials/materials are measurably different,lsd.wood_vs_membrane,29.0717
+materials/materials differ for every exciter,strike.minPairwiseLsdDb,26.4499
+materials/materials differ for every exciter,pluck.minPairwiseLsdDb,23.9565
+materials/materials differ for every exciter,bow.minPairwiseLsdDb,2.40213
+materials/materials differ for every exciter,air.minPairwiseLsdDb,4.97915
+materials/material change is continuous,worstHfSpikeAboveNeighboursDb,7.18967
+materials/material change is continuous,glassModeAfterMorph_ratio,2.63468
+materials/inspector modifiers,loss0.2.dropDb_0.2to2.5s,8.1078
+materials/inspector modifiers,loss0.8.dropDb_0.2to2.5s,40.278
+materials/inspector modifiers,brightness0.1.centroid,438.421
+materials/inspector modifiers,brightness0.9.centroid,1109
+materials/inspector modifiers,inharmonicity0.1.h4stretch,1.01557
+materials/inspector modifiers,inharmonicity0.9.h4stretch,1.05457
+materials/inspector modifiers,mass0.1.t60,6.29115
+materials/inspector modifiers,mass0.9.t60,12.468
+freeze/freeze holds energy without runaway,metal.static.levelDb@2s,-17.7626
+freeze/freeze holds energy without runaway,metal.static.levelDb@10s,-17.5644
+freeze/freeze holds energy without runaway,metal.static.levelDb@19s,-17.6577
+freeze/freeze holds energy without runaway,glass.chaos1.motion1.levelDb@2s,-18.6341
+freeze/freeze holds energy without runaway,glass.chaos1.motion1.levelDb@10s,-18.6668
+freeze/freeze holds energy without runaway,glass.chaos1.motion1.levelDb@19s,-18.8408
+freeze/freeze holds energy without runaway,wood.chaos0.5.levelDb@2s,-24.7599
+freeze/freeze holds energy without runaway,wood.chaos0.5.levelDb@10s,-24.9227
+freeze/freeze holds energy without runaway,wood.chaos0.5.levelDb@19s,-24.9998
+freeze/freeze engage is smooth and new notes play normally,engage.worstHfSpikeDb,2.64048
+freeze/freeze engage is smooth and new notes play normally,noteDuringFreeze.t60,4.96007
+freeze/freeze engage is smooth and new notes play normally,frozenNote.levelChangeDb_1s_to_5.3s,0.00310442
+chaos/zero chaos is repeatable, seeds are deterministic, extreme is bounded,chaos0.maxDiff_differentSeeds,0
+chaos/zero chaos is repeatable, seeds are deterministic, extreme is bounded,chaos0.8.maxDiff_sameSeed,0
+chaos/zero chaos is repeatable, seeds are deterministic, extreme is bounded,chaos0.8.maxDiff_otherSeed,0.122036
+chaos/zero chaos is repeatable, seeds are deterministic, extreme is bounded,chaos1.peak,0.273705
+motion/motion moves the network and follows tempo when synced,depth1.radiusA_range,0.199555
+motion/motion moves the network and follows tempo when synced,depth0.radiusA_range,0
+motion/synced drift is phase-locked to the host timeline,radiusRange,0.277783
+motion/synced drift is phase-locked to the host timeline,maxDiff_sameBarPosition,0
+motion/synced drift is phase-locked to the host timeline,maxDiff_halfBarLater,0.197601
+gesture/gesture build, serialise and playback,serialiseRoundTripMaxError,0
+gesture/gesture build, serialise and playback,syncedBeats,2
+gesture/gesture build, serialise and playback,playback.radiusRange,0.392065
+gesture/gesture build, serialise and playback,playback.periodSeconds,1.296
+gesture/a drag around the core becomes a seamless orbit,maxAngleStepPerSample_rad,0.00536841
+gesture/a drag around the core becomes a seamless orbit,turnsOverTwoCycles,2
+gesture/synced gesture follows host tempo,bpm120.periodSeconds,2
+gesture/synced gesture follows host tempo,bpm90.periodSeconds,2.66667
+nonlinear/extreme energy saturates coupling and stays bounded,peak,1
+nonlinear/extreme energy saturates coupling and stays bounded,nonFiniteEvents,0
+network/cayley scattering is orthogonal,worstOrthogonalityError,9.3983e-08
+network/impulse into core propagates to every node,uncoupled.energyInNodesAtoD,0
+network/impulse into core propagates to every node,star.nodeA.peakRelToCoreDb,-15.2292
+network/impulse into core propagates to every node,star.nodeA.peakTime_s,0.0153333
+network/impulse into core propagates to every node,star.nodeB.peakRelToCoreDb,-9.20926
+network/impulse into core propagates to every node,star.nodeB.peakTime_s,0.041
+network/impulse into core propagates to every node,star.nodeC.peakRelToCoreDb,-13.8995
+network/impulse into core propagates to every node,star.nodeC.peakTime_s,0.031
+network/impulse into core propagates to every node,star.nodeD.peakRelToCoreDb,-10.9372
+network/impulse into core propagates to every node,star.nodeD.peakTime_s,0.0303333
+network/impulse into core propagates to every node,ring.nodeA.peakRelToCoreDb,-13.9414
+network/impulse into core propagates to every node,ring.nodeA.peakTime_s,0.0426667
+network/impulse into core propagates to every node,ring.nodeB.peakRelToCoreDb,-9.4915
+network/impulse into core propagates to every node,ring.nodeB.peakTime_s,0.032
+network/impulse into core propagates to every node,ring.nodeC.peakRelToCoreDb,-14.8839
+network/impulse into core propagates to every node,ring.nodeC.peakTime_s,0.031
+network/impulse into core propagates to every node,ring.nodeD.peakRelToCoreDb,-12.8853
+network/impulse into core propagates to every node,ring.nodeD.peakTime_s,0.0213333
+network/impulse into core propagates to every node,chain.nodeA.peakRelToCoreDb,-12.3383
+network/impulse into core propagates to every node,chain.nodeA.peakTime_s,0.0516667
+network/impulse into core propagates to every node,chain.nodeB.peakRelToCoreDb,-21.3591
+network/impulse into core propagates to every node,chain.nodeB.peakTime_s,0.0563333
+network/impulse into core propagates to every node,chain.nodeC.peakRelToCoreDb,-30.8033
+network/impulse into core propagates to every node,chain.nodeC.peakTime_s,0.081
+network/impulse into core propagates to every node,chain.nodeD.peakRelToCoreDb,-20.4188
+network/impulse into core propagates to every node,chain.nodeD.peakTime_s,0.0713333
+network/energy decays and output is bounded,broadbandT60_s,1.58954
+network/energy decays and output is bounded,rms@0.2s,0.00547941
+network/energy decays and output is bounded,rms@2.0s,6.44295e-06
+network/energy decays and output is bounded,rms@4.5s,9.69323e-10
+network/maximum coupling stays stable,phi0.80.peak,0.578333
+network/maximum coupling stays stable,phi1.20.peak,0.581582
+network/maximum coupling stays stable,phi1.57.peak,0.57773
+network/stability fuzz,abusive.configs,1500
+network/stability fuzz,abusive.nonFiniteSamples,0
+network/stability fuzz,abusive.worstStoredOverInjected,1.68381
+network/stability fuzz,abusive.worstPeak,7.47165
+network/stability fuzz,smooth.configs,1500
+network/stability fuzz,smooth.nonFiniteSamples,0
+network/stability fuzz,smooth.worstStoredOverInjected_at1s,0.488885
+network/stability fuzz,smooth.worstTransientRatio,1.31337
+network/stability fuzz,smooth.worstPeak,9.6226
+network/topologies sound different,lsd_star_vs_ring_dB,1.53225
+network/topologies sound different,lsd_star_vs_web_dB,5.79667
+network/topologies sound different,lsd_star_vs_chain_dB,14.8554
+network/topologies sound different,lsd_ring_vs_web_dB,6.36162
+network/topologies sound different,lsd_ring_vs_chain_dB,15.0515
+network/topologies sound different,lsd_web_vs_chain_dB,16.6953
+network/coupling automation is safe,curvature_before,0.00901386
+network/coupling automation is safe,curvature_during_sweep,0.004262
+network/coupling automation is safe,hfRatioDb_before,-49.4874
+network/coupling automation is safe,hfRatioDb_during,-92.1763
+network/lossless network conserves energy,energy@0.1s,4.56661
+network/lossless network conserves energy,energy@10s,4.54793
+network/lossless network conserves energy,ratio_10s_over_0.1s,0.99591
+network/lossless network conserves energy,maxOverMinDuringRun,1.02775
+network/telemetry reflects dsp,phi0.0.spokeFlux,0
+network/telemetry reflects dsp,phi0.3.spokeFlux,0.000199288
+network/fundamental stays in tune when coupled,phi0.00.fundamentalCents,-3.68849e-05
+network/fundamental stays in tune when coupled,phi0.10.fundamentalCents,0.44725
+network/fundamental stays in tune when coupled,phi0.20.fundamentalCents,1.78476
+network/fundamental stays in tune when coupled,phi0.35.fundamentalCents,5.42898
+network/cpu,nsPerSample_static@48k,41.6747
+network/cpu,nsPerSample_drifting@48k,68.2249
+network/cpu,fullDesignsPerSecond_drifting@48k,8.88
+network/cpu,retunesPerSecond_drifting@48k,14988.6
+network/cpu,coreFractionPerVoice_drifting@48k,0.00327479
+network/cpu,nsPerSample_static@96k,41.9771
+network/cpu,nsPerSample_drifting@96k,65.9313
+network/cpu,fullDesignsPerSecond_drifting@96k,17.76
+network/cpu,retunesPerSecond_drifting@96k,29977.2
+network/cpu,coreFractionPerVoice_drifting@96k,0.00632941
+performance/engine cpu by voices, exciter and sample rate,44k.strike.1v.percentOfCore,0.775723
+performance/engine cpu by voices, exciter and sample rate,44k.strike.4v.percentOfCore,3.56503
+performance/engine cpu by voices, exciter and sample rate,44k.strike.8v.percentOfCore,4.76522
+performance/engine cpu by voices, exciter and sample rate,44k.strike.16v.percentOfCore,9.44323
+performance/engine cpu by voices, exciter and sample rate,44k.bow.1v.percentOfCore,0.789392
+performance/engine cpu by voices, exciter and sample rate,44k.bow.4v.percentOfCore,2.76729
+performance/engine cpu by voices, exciter and sample rate,44k.bow.8v.percentOfCore,6.17874
+performance/engine cpu by voices, exciter and sample rate,44k.bow.16v.percentOfCore,10.7669
+performance/engine cpu by voices, exciter and sample rate,48k.strike.1v.percentOfCore,0.805489
+performance/engine cpu by voices, exciter and sample rate,48k.strike.4v.percentOfCore,2.83905
+performance/engine cpu by voices, exciter and sample rate,48k.strike.8v.percentOfCore,5.43228
+performance/engine cpu by voices, exciter and sample rate,48k.strike.16v.percentOfCore,10.6261
+performance/engine cpu by voices, exciter and sample rate,48k.bow.1v.percentOfCore,0.927358
+performance/engine cpu by voices, exciter and sample rate,48k.bow.4v.percentOfCore,3.16953
+performance/engine cpu by voices, exciter and sample rate,48k.bow.8v.percentOfCore,6.18638
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.percentOfCore,12.3017
+performance/engine cpu by voices, exciter and sample rate,96k.strike.1v.percentOfCore,1.24982
+performance/engine cpu by voices, exciter and sample rate,96k.strike.4v.percentOfCore,4.0985
+performance/engine cpu by voices, exciter and sample rate,96k.strike.8v.percentOfCore,8.03969
+performance/engine cpu by voices, exciter and sample rate,96k.strike.16v.percentOfCore,16.4815
+performance/engine cpu by voices, exciter and sample rate,96k.bow.1v.percentOfCore,1.27519
+performance/engine cpu by voices, exciter and sample rate,96k.bow.4v.percentOfCore,4.73352
+performance/engine cpu by voices, exciter and sample rate,96k.bow.8v.percentOfCore,8.6093
+performance/engine cpu by voices, exciter and sample rate,96k.bow.16v.percentOfCore,19.9824
+performance/engine cpu by voices, exciter and sample rate,48k.strike.8v.coupling0.00.chaos0.0.motion0.0.percentOfCore,4.79797
+performance/engine cpu by voices, exciter and sample rate,48k.strike.8v.coupling1.00.chaos0.0.motion0.0.percentOfCore,4.85175
+performance/engine cpu by voices, exciter and sample rate,48k.strike.8v.coupling0.35.chaos1.0.motion0.0.percentOfCore,5.94225
+performance/engine cpu by voices, exciter and sample rate,48k.strike.8v.coupling0.35.chaos0.1.motion1.0.percentOfCore,6.28938
+performance/engine cpu by voices, exciter and sample rate,48k.strike.16v.coupling0.00.chaos0.0.motion0.0.percentOfCore,9.00137
+performance/engine cpu by voices, exciter and sample rate,48k.strike.16v.coupling1.00.chaos0.0.motion0.0.percentOfCore,9.81034
+performance/engine cpu by voices, exciter and sample rate,48k.strike.16v.coupling0.35.chaos1.0.motion0.0.percentOfCore,12.1714
+performance/engine cpu by voices, exciter and sample rate,48k.strike.16v.coupling0.35.chaos0.1.motion1.0.percentOfCore,12.2148
+performance/engine cpu by voices, exciter and sample rate,48k.bow.8v.coupling0.00.chaos0.0.motion0.0.percentOfCore,4.87811
+performance/engine cpu by voices, exciter and sample rate,48k.bow.8v.coupling1.00.chaos0.0.motion0.0.percentOfCore,5.67071
+performance/engine cpu by voices, exciter and sample rate,48k.bow.8v.coupling0.35.chaos1.0.motion0.0.percentOfCore,6.31835
+performance/engine cpu by voices, exciter and sample rate,48k.bow.8v.coupling0.35.chaos0.1.motion1.0.percentOfCore,6.47566
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.coupling0.00.chaos0.0.motion0.0.percentOfCore,10.6934
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.coupling1.00.chaos0.0.motion0.0.percentOfCore,11.2083
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.coupling0.35.chaos1.0.motion0.0.percentOfCore,12.6377
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.coupling0.35.chaos0.1.motion1.0.percentOfCore,11.6641
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.qualityEco.percentOfCore,8.30362
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.qualityNormal.percentOfCore,11.7806
+performance/engine cpu by voices, exciter and sample rate,48k.bow.16v.qualityHigh.percentOfCore,18.6736
+performance/quality modes sound alike and switch live without clicks,normal.lsdVsHigh_dB,1.17327
+performance/quality modes sound alike and switch live without clicks,normal.pitchVsHigh_cents,0.010736
+performance/quality modes sound alike and switch live without clicks,eco.lsdVsHigh_dB,1.74493
+performance/quality modes sound alike and switch live without clicks,eco.pitchVsHigh_cents,0.0329902
+performance/quality modes sound alike and switch live without clicks,switching.maxStep,0.0123434
+performance/quality modes sound alike and switch live without clicks,steady.maxStep,0.0120926
+performance/profile target (8 bowed voices, 1 s),realtimeFraction,0.0621253
+presets/factory library is complete and valid,factoryPresets,46
+presets/factory library is complete and valid,category.PADS,4
+presets/factory library is complete and valid,category.PLUCKED,4
+presets/factory library is complete and valid,category.STRUCK,4
+presets/factory library is complete and valid,category.BOWED,4
+presets/factory library is complete and valid,category.AIR,4
+presets/factory library is complete and valid,category.GLASS,3
+presets/factory library is complete and valid,category.METAL,4
+presets/factory library is complete and valid,category.WOOD,4
+presets/factory library is complete and valid,category.MEMBRANE,4
+presets/factory library is complete and valid,category.DRONES,3
+presets/factory library is complete and valid,category.PERCUSSION,4
+presets/factory library is complete and valid,category.EXPERIMENTAL,4
+presets/factory library is complete and valid,missingSpecNames,0
+presets/factory library is complete and valid,badIds,0
+presets/factory library is complete and valid,outOfRange,0
+presets/factory library is complete and valid,badGestures,0
+presets/factory library is complete and valid,clampedTunings,0
+presets/every factory preset renders cleanly,loudest_db,-18.4489
+presets/every factory preset renders cleanly,quietest_db,-27.9245
+presets/every factory preset renders cleanly,loudnessSpread_db,9.47552
+presets/every factory preset renders cleanly,nonFinite,0
+presets/every factory preset renders cleanly,clipped,0
+presets/every factory preset renders cleanly,silent,0
+presets/every factory preset renders cleanly,dcOffsets,0
+presets/every factory preset renders cleanly,closestPairLsd_db,2.03212
+state/round trip reproduces the sound exactly,stateBytes,10288
+state/round trip reproduces the sound exactly,parameterMismatches,0
+state/round trip reproduces the sound exactly,gestureMismatches,0
+state/round trip reproduces the sound exactly,renderMaxDiff,0
+state/round trip reproduces the sound exactly,renderRms_db,-35.1943
+state/legacy and hostile state is handled,legacyCoupling,0.61
+random/gentle mutation stays close to the sound,maxNormalisedStep,0.0995
+random/gentle mutation stays close to the sound,discreteChanged,0
+random/full regeneration is musical and safe,distinctExciters,4
+random/full regeneration is musical and safe,distinctMaterials,4
+random/full regeneration is musical and safe,quietest_db,-35.7861
+random/full regeneration is musical and safe,loudest_db,-21.8162
+random/full regeneration is musical and safe,outsideWindows,0
+presets/switching presets while notes sound is safe,presetsVisited,94
+presets/switching presets while notes sound is safe,peak_db,-6.45388
+state/automating every parameter is safe and smooth,parametersAutomated,64
+state/automating every parameter is safe and smooth,worstStepRatio,2.96168
+state/automating every parameter is safe and smooth,worstPeak_db,-3.28526
+realtime/processBlock never allocates,blocksChecked,640
+realtime/processBlock never allocates,allocationsInProcessBlock,0
+realtime/processBlock never allocates,worstBlock,0
+realtime/audio and message threads run concurrently without races,messageThreadOperations,1976
+realtime/audio and message threads run concurrently without races,audioBlocks,6935
+resonator/fractional delay comparison,linear.maxPitchErrorCents_C1_C6,0.0107334
+resonator/fractional delay comparison,linear.maxPitchErrorCents_C7_C8,0.0548828
+resonator/fractional delay comparison,linear.gainDb_frac0.5_at_0.25fs,-3.0103
+resonator/fractional delay comparison,linear.gainDb_frac0.5_at_0.45fs,-16.1134
+resonator/fractional delay comparison,linear.hfDecayRatio_frac0.5_vs_0,0.091194
+resonator/fractional delay comparison,linear.sweepSNRdB_3kHz,37.0587
+resonator/fractional delay comparison,linear.sweepMaxErrorJump,0.00749305
+resonator/fractional delay comparison,linear.nsPerSample,2.16364
+resonator/fractional delay comparison,hermite.maxPitchErrorCents_C1_C6,0.0103836
+resonator/fractional delay comparison,hermite.maxPitchErrorCents_C7_C8,0.136127
+resonator/fractional delay comparison,hermite.gainDb_frac0.5_at_0.25fs,-1.0721
+resonator/fractional delay comparison,hermite.gainDb_frac0.5_at_0.45fs,-12.6627
+resonator/fractional delay comparison,hermite.hfDecayRatio_frac0.5_vs_0,0.504245
+resonator/fractional delay comparison,hermite.sweepSNRdB_3kHz,62.109
+resonator/fractional delay comparison,hermite.sweepMaxErrorJump,0.000396999
+resonator/fractional delay comparison,hermite.nsPerSample,3.68314
+resonator/fractional delay comparison,lagrange3.maxPitchErrorCents_C1_C6,6.24164e-05
+resonator/fractional delay comparison,lagrange3.maxPitchErrorCents_C7_C8,0.00736956
+resonator/fractional delay comparison,lagrange3.gainDb_frac0.5_at_0.25fs,-1.0721
+resonator/fractional delay comparison,lagrange3.gainDb_frac0.5_at_0.45fs,-12.6627
+resonator/fractional delay comparison,lagrange3.hfDecayRatio_frac0.5_vs_0,0.504245
+resonator/fractional delay comparison,lagrange3.sweepSNRdB_3kHz,68.0563
+resonator/fractional delay comparison,lagrange3.sweepMaxErrorJump,0.000214653
+resonator/fractional delay comparison,lagrange3.nsPerSample,2.65651
+resonator/fractional delay comparison,thiran1.maxPitchErrorCents_C1_C6,2.0872e-05
+resonator/fractional delay comparison,thiran1.maxPitchErrorCents_C7_C8,5.49497e-05
+resonator/fractional delay comparison,thiran1.gainDb_frac0.5_at_0.25fs,9.7188e-08
+resonator/fractional delay comparison,thiran1.gainDb_frac0.5_at_0.45fs,3.37967e-08
+resonator/fractional delay comparison,thiran1.hfDecayRatio_frac0.5_vs_0,0.997825
+resonator/fractional delay comparison,thiran1.sweepSNRdB_3kHz,49.0213
+resonator/fractional delay comparison,thiran1.sweepMaxErrorJump,0.0147594
+resonator/fractional delay comparison,thiran1.nsPerSample,2.38557
+resonator/pitch C1-C6 across sample rates,worstPitchErrorCents_harmonic,6.73441e-05
+resonator/pitch C1-C6 across sample rates,worstPitchErrorCents_dispersive,0.00329423
+resonator/chromatic intervals,worstChromaticErrorCents_C3_C5,0.000108659
+resonator/frequency dependent decay accuracy,worstT60RelErr_fundamental,3.53651e-05
+resonator/frequency dependent decay accuracy,worstT60RelErr_hfReference,0.0144226
+resonator/sample rate consistency,t60Spread,2.47545e-05
+resonator/sample rate consistency,inharmonicitySpread,0.00714648
+resonator/sample rate consistency,inharmonicity@48k,0.0220268
+resonator/sample rate consistency,centroid@44k1,1735.54
+resonator/sample rate consistency,centroid@192k,1647.23
+resonator/sample rate consistency,centroidSpread_below20k,0.0536136
+resonator/frequency automation is click free,octave200ms.hfRatioDb_before,-44.0042
+resonator/frequency automation is click free,octave200ms.hfRatioDb_during,-42.9082
+resonator/frequency automation is click free,octave200ms.curvature_before,0.0148497
+resonator/frequency automation is click free,octave200ms.curvature_during,0.00724461
+resonator/frequency automation is click free,octave30ms.thiran.hfRatioDb_during,-19.3334
+resonator/frequency automation is click free,octave30ms.lagrange.hfRatioDb_during,-24.5862
+resonator/frequency automation is click free,octave30ms.thiran.curvature_during,0.0316199
+resonator/frequency automation is click free,octave30ms.lagrange.curvature_during,0.0234997
+resonator/near nyquist stability and tuning,pitchErrorCents@8000,-1.41549e-05
+resonator/near nyquist stability and tuning,pitchErrorCents@12000,1.74102e-07
+resonator/near nyquist stability and tuning,pitchErrorCents@16000,3.84411e-13
+resonator/near nyquist stability and tuning,pitchErrorCents@19000,1.2959e-05
+resonator/impulse responses and dispersion,inharmonicity_disp0.0,1.15411e-06
+resonator/impulse responses and dispersion,inharmonicity_disp0.1,0.00502356
+resonator/impulse responses and dispersion,inharmonicity_disp0.3,0.0882693
+resonator/impulse responses and dispersion,inharmonicity_disp0.5,0.302999
+resonator/cpu per resonator,nsPerSample_thiran_loss_4stageDispersion,4.61844
+resonator/cpu per resonator,percentOfRealtimeCore_per_resonator@48k,0.0221685
+resonator/modal bank tuning decay and cpu,modal.worstPitchErrorCents,0.000314414
+resonator/modal bank tuning decay and cpu,modal.worstT60RelErr,0.000606896
+resonator/modal bank tuning decay and cpu,modal.nsPerSample_16modes,6.38636
+resonator/modal bank tuning decay and cpu,modal.nsPerModeSample,0.399147
+smoke/processor renders MIDI note,energy,0.00439831
+soundcheck/exciter x material matrix,strike.glass.peak,0.276748
+soundcheck/exciter x material matrix,strike.glass.rmsAttack,0.0761756
+soundcheck/exciter x material matrix,strike.glass.rmsSustain,0.0118302
+soundcheck/exciter x material matrix,strike.glass.centroidHz,1148.44
+soundcheck/exciter x material matrix,strike.glass.t60,3.41577
+soundcheck/exciter x material matrix,strike.glass.fundamentalCents,0.161352
+soundcheck/exciter x material matrix,strike.glass.inharmonicity,0.321751
+soundcheck/exciter x material matrix,strike.metal.peak,0.277538
+soundcheck/exciter x material matrix,strike.metal.rmsAttack,0.0730076
+soundcheck/exciter x material matrix,strike.metal.rmsSustain,0.0214301
+soundcheck/exciter x material matrix,strike.metal.centroidHz,1005.22
+soundcheck/exciter x material matrix,strike.metal.t60,3.75734
+soundcheck/exciter x material matrix,strike.metal.fundamentalCents,0.165794
+soundcheck/exciter x material matrix,strike.metal.inharmonicity,0.226787
+soundcheck/exciter x material matrix,strike.wood.peak,0.364801
+soundcheck/exciter x material matrix,strike.wood.rmsAttack,0.0747238
+soundcheck/exciter x material matrix,strike.wood.rmsSustain,7.05457e-06
+soundcheck/exciter x material matrix,strike.wood.centroidHz,572.454
+soundcheck/exciter x material matrix,strike.wood.t60,0.914035
+soundcheck/exciter x material matrix,strike.wood.fundamentalCents,0.509529
+soundcheck/exciter x material matrix,strike.wood.inharmonicity,0.137618
+soundcheck/exciter x material matrix,strike.membrane.peak,0.353715
+soundcheck/exciter x material matrix,strike.membrane.rmsAttack,0.0754014
+soundcheck/exciter x material matrix,strike.membrane.rmsSustain,3.1801e-06
+soundcheck/exciter x material matrix,strike.membrane.centroidHz,417.413
+soundcheck/exciter x material matrix,strike.membrane.t60,0.839052
+soundcheck/exciter x material matrix,strike.membrane.fundamentalCents,4.45349
+soundcheck/exciter x material matrix,strike.membrane.inharmonicity,0.386483
+soundcheck/exciter x material matrix,pluck.glass.peak,0.295318
+soundcheck/exciter x material matrix,pluck.glass.rmsAttack,0.0724004
+soundcheck/exciter x material matrix,pluck.glass.rmsSustain,0.0107602
+soundcheck/exciter x material matrix,pluck.glass.centroidHz,3551.16
+soundcheck/exciter x material matrix,pluck.glass.t60,3.58469
+soundcheck/exciter x material matrix,pluck.glass.fundamentalCents,0.474294
+soundcheck/exciter x material matrix,pluck.glass.inharmonicity,0.0147511
+soundcheck/exciter x material matrix,pluck.metal.peak,0.310657
+soundcheck/exciter x material matrix,pluck.metal.rmsAttack,0.0722085
+soundcheck/exciter x material matrix,pluck.metal.rmsSustain,0.020452
+soundcheck/exciter x material matrix,pluck.metal.centroidHz,1853.05
+soundcheck/exciter x material matrix,pluck.metal.t60,3.80037
+soundcheck/exciter x material matrix,pluck.metal.fundamentalCents,0.665468
+soundcheck/exciter x material matrix,pluck.metal.inharmonicity,0.0571049
+soundcheck/exciter x material matrix,pluck.wood.peak,0.397984
+soundcheck/exciter x material matrix,pluck.wood.rmsAttack,0.0777435
+soundcheck/exciter x material matrix,pluck.wood.rmsSustain,6.84139e-06
+soundcheck/exciter x material matrix,pluck.wood.centroidHz,736.265
+soundcheck/exciter x material matrix,pluck.wood.t60,0.905342
+soundcheck/exciter x material matrix,pluck.wood.fundamentalCents,1.28663
+soundcheck/exciter x material matrix,pluck.wood.inharmonicity,0.0149771
+soundcheck/exciter x material matrix,pluck.membrane.peak,0.54941
+soundcheck/exciter x material matrix,pluck.membrane.rmsAttack,0.0777761
+soundcheck/exciter x material matrix,pluck.membrane.rmsSustain,3.12263e-06
+soundcheck/exciter x material matrix,pluck.membrane.centroidHz,628.031
+soundcheck/exciter x material matrix,pluck.membrane.t60,0.83588
+soundcheck/exciter x material matrix,pluck.membrane.fundamentalCents,11.5883
+soundcheck/exciter x material matrix,pluck.membrane.inharmonicity,0.0806035
+soundcheck/exciter x material matrix,bow.glass.peak,0.13928
+soundcheck/exciter x material matrix,bow.glass.rmsAttack,0.0446914
+soundcheck/exciter x material matrix,bow.glass.rmsSustain,0.0956423
+soundcheck/exciter x material matrix,bow.glass.centroidHz,638.146
+soundcheck/exciter x material matrix,bow.glass.t60,0.179493
+soundcheck/exciter x material matrix,bow.glass.fundamentalCents,-0.0132461
+soundcheck/exciter x material matrix,bow.glass.inharmonicity,2.46843e-06
+soundcheck/exciter x material matrix,bow.metal.peak,0.139219
+soundcheck/exciter x material matrix,bow.metal.rmsAttack,0.0526795
+soundcheck/exciter x material matrix,bow.metal.rmsSustain,0.0904975
+soundcheck/exciter x material matrix,bow.metal.centroidHz,918.708
+soundcheck/exciter x material matrix,bow.metal.t60,0.181198
+soundcheck/exciter x material matrix,bow.metal.fundamentalCents,0.00971096
+soundcheck/exciter x material matrix,bow.metal.inharmonicity,2.07145e-06
+soundcheck/exciter x material matrix,bow.wood.peak,0.136376
+soundcheck/exciter x material matrix,bow.wood.rmsAttack,0.0406266
+soundcheck/exciter x material matrix,bow.wood.rmsSustain,0.0926098
+soundcheck/exciter x material matrix,bow.wood.centroidHz,610.473
+soundcheck/exciter x material matrix,bow.wood.t60,0.118848
+soundcheck/exciter x material matrix,bow.wood.fundamentalCents,0.00384799
+soundcheck/exciter x material matrix,bow.wood.inharmonicity,5.72637e-06
+soundcheck/exciter x material matrix,bow.membrane.peak,0.137482
+soundcheck/exciter x material matrix,bow.membrane.rmsAttack,0.0339266
+soundcheck/exciter x material matrix,bow.membrane.rmsSustain,0.0949838
+soundcheck/exciter x material matrix,bow.membrane.centroidHz,453.566
+soundcheck/exciter x material matrix,bow.membrane.t60,0.124117
+soundcheck/exciter x material matrix,bow.membrane.fundamentalCents,0.393262
+soundcheck/exciter x material matrix,bow.membrane.inharmonicity,2.1072e-06
+soundcheck/exciter x material matrix,air.glass.peak,0.121643
+soundcheck/exciter x material matrix,air.glass.rmsAttack,0.00750263
+soundcheck/exciter x material matrix,air.glass.rmsSustain,0.0813944
+soundcheck/exciter x material matrix,air.glass.centroidHz,4629.84
+soundcheck/exciter x material matrix,air.glass.t60,2.08061
+soundcheck/exciter x material matrix,air.glass.fundamentalCents,-0.176674
+soundcheck/exciter x material matrix,air.glass.inharmonicity,0.902012
+soundcheck/exciter x material matrix,air.metal.peak,0.107392
+soundcheck/exciter x material matrix,air.metal.rmsAttack,0.0063393
+soundcheck/exciter x material matrix,air.metal.rmsSustain,0.0714901
+soundcheck/exciter x material matrix,air.metal.centroidHz,5665.62
+soundcheck/exciter x material matrix,air.metal.t60,2.81327
+soundcheck/exciter x material matrix,air.metal.fundamentalCents,-0.538218
+soundcheck/exciter x material matrix,air.metal.inharmonicity,0.0638549
+soundcheck/exciter x material matrix,air.wood.peak,0.118983
+soundcheck/exciter x material matrix,air.wood.rmsAttack,0.0110768
+soundcheck/exciter x material matrix,air.wood.rmsSustain,0.0755017
+soundcheck/exciter x material matrix,air.wood.centroidHz,3662.49
+soundcheck/exciter x material matrix,air.wood.t60,0.443224
+soundcheck/exciter x material matrix,air.wood.fundamentalCents,0.0396313
+soundcheck/exciter x material matrix,air.wood.inharmonicity,0.141866
+soundcheck/exciter x material matrix,air.membrane.peak,0.121496
+soundcheck/exciter x material matrix,air.membrane.rmsAttack,0.00861879
+soundcheck/exciter x material matrix,air.membrane.rmsSustain,0.0797705
+soundcheck/exciter x material matrix,air.membrane.centroidHz,2924.51
+soundcheck/exciter x material matrix,air.membrane.t60,0.473783
+soundcheck/exciter x material matrix,air.membrane.fundamentalCents,6.35712
+soundcheck/exciter x material matrix,air.membrane.inharmonicity,0.37713
+tuning/tension is not master pitch,worstFundamentalCents_T0.2_0.8,0.355318
+tuning/tension is not master pitch,worstFundamentalCents_T0_or_1,1.90008
+tuning/tension stretches the modal spacing,tension0.1.nodeA_ratio,1.11406
+tuning/tension stretches the modal spacing,tension0.3.nodeA_ratio,1.14951
+tuning/tension stretches the modal spacing,tension0.5.nodeA_ratio,1.18608
+tuning/tension stretches the modal spacing,tension0.7.nodeA_ratio,1.22382
+tuning/tension stretches the modal spacing,tension0.9.nodeA_ratio,1.26276
+tuning/pitch tracks MIDI C1-C6,worstCents_C1_C6,0.762528
+tuning/membrane pitch glide settles,membrane.early_cents,7.43943
+tuning/membrane pitch glide settles,membrane.settled_cents,0.124036
+tuning/chromatic intervals,worstCents_C3_C5_pluckWood,0.190464
+tuning/node radius and quantise,radius1.00.ratio,2.37234
+tuning/node radius and quantise,radius0.00.ratio,0.593001
+tuning/node radius and quantise,radius0.75.ratio,1.67741
+tuning/node radius and quantise,radius0.54q.ratio,1.2566
+tuning/node radius and quantise,radius0.46q.ratio,1.11949
+tuning/coupling compensation keeps pitch,glass.coupling0.20.uncompensatedCents,9.11844
+tuning/coupling compensation keeps pitch,glass.coupling0.20.compensatedCents,0.0937033
+tuning/coupling compensation keeps pitch,glass.coupling0.20.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,glass.coupling0.35.uncompensatedCents,25.8902
+tuning/coupling compensation keeps pitch,glass.coupling0.35.compensatedCents,0.10052
+tuning/coupling compensation keeps pitch,glass.coupling0.35.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,glass.coupling0.50.uncompensatedCents,50.2127
+tuning/coupling compensation keeps pitch,glass.coupling0.50.compensatedCents,0.111964
+tuning/coupling compensation keeps pitch,glass.coupling0.50.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,glass.coupling0.65.uncompensatedCents,81.2951
+tuning/coupling compensation keeps pitch,glass.coupling0.65.compensatedCents,0.133221
+tuning/coupling compensation keeps pitch,glass.coupling0.65.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,glass.coupling0.80.uncompensatedCents,118.242
+tuning/coupling compensation keeps pitch,glass.coupling0.80.compensatedCents,-0.0577216
+tuning/coupling compensation keeps pitch,glass.coupling0.80.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,glass.coupling1.00.uncompensatedCents,174.781
+tuning/coupling compensation keeps pitch,glass.coupling1.00.compensatedCents,0.204061
+tuning/coupling compensation keeps pitch,glass.coupling1.00.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling0.20.uncompensatedCents,-5.43929
+tuning/coupling compensation keeps pitch,metal.coupling0.20.compensatedCents,0.275211
+tuning/coupling compensation keeps pitch,metal.coupling0.20.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling0.35.uncompensatedCents,-15.6805
+tuning/coupling compensation keeps pitch,metal.coupling0.35.compensatedCents,0.106236
+tuning/coupling compensation keeps pitch,metal.coupling0.35.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling0.50.uncompensatedCents,-29.5347
+tuning/coupling compensation keeps pitch,metal.coupling0.50.compensatedCents,-0.302729
+tuning/coupling compensation keeps pitch,metal.coupling0.50.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling0.65.uncompensatedCents,-45.8457
+tuning/coupling compensation keeps pitch,metal.coupling0.65.compensatedCents,-1.18982
+tuning/coupling compensation keeps pitch,metal.coupling0.65.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling0.80.uncompensatedCents,-63.6241
+tuning/coupling compensation keeps pitch,metal.coupling0.80.compensatedCents,-2.75231
+tuning/coupling compensation keeps pitch,metal.coupling0.80.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,metal.coupling1.00.uncompensatedCents,-88.2686
+tuning/coupling compensation keeps pitch,metal.coupling1.00.compensatedCents,-6.28547
+tuning/coupling compensation keeps pitch,metal.coupling1.00.noteVsStrongest_dB,-1.31199
+tuning/coupling compensation keeps pitch,wood.coupling0.20.uncompensatedCents,9.85551
+tuning/coupling compensation keeps pitch,wood.coupling0.20.compensatedCents,0.0284162
+tuning/coupling compensation keeps pitch,wood.coupling0.20.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,wood.coupling0.35.uncompensatedCents,28.291
+tuning/coupling compensation keeps pitch,wood.coupling0.35.compensatedCents,0.0376037
+tuning/coupling compensation keeps pitch,wood.coupling0.35.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,wood.coupling0.50.uncompensatedCents,55.4185
+tuning/coupling compensation keeps pitch,wood.coupling0.50.compensatedCents,0.0520195
+tuning/coupling compensation keeps pitch,wood.coupling0.50.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,wood.coupling0.65.uncompensatedCents,90.7689
+tuning/coupling compensation keeps pitch,wood.coupling0.65.compensatedCents,0.0668461
+tuning/coupling compensation keeps pitch,wood.coupling0.65.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,wood.coupling0.80.uncompensatedCents,133.763
+tuning/coupling compensation keeps pitch,wood.coupling0.80.compensatedCents,0.10724
+tuning/coupling compensation keeps pitch,wood.coupling0.80.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,wood.coupling1.00.uncompensatedCents,201.397
+tuning/coupling compensation keeps pitch,wood.coupling1.00.compensatedCents,0.0244548
+tuning/coupling compensation keeps pitch,wood.coupling1.00.noteVsStrongest_dB,-0.760592
+tuning/coupling compensation keeps pitch,membrane.coupling0.20.uncompensatedCents,0.625481
+tuning/coupling compensation keeps pitch,membrane.coupling0.20.compensatedCents,0.203404
+tuning/coupling compensation keeps pitch,membrane.coupling0.20.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,membrane.coupling0.35.uncompensatedCents,1.41591
+tuning/coupling compensation keeps pitch,membrane.coupling0.35.compensatedCents,0.210595
+tuning/coupling compensation keeps pitch,membrane.coupling0.35.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,membrane.coupling0.50.uncompensatedCents,2.5737
+tuning/coupling compensation keeps pitch,membrane.coupling0.50.compensatedCents,0.21519
+tuning/coupling compensation keeps pitch,membrane.coupling0.50.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,membrane.coupling0.65.uncompensatedCents,4.06142
+tuning/coupling compensation keeps pitch,membrane.coupling0.65.compensatedCents,0.236427
+tuning/coupling compensation keeps pitch,membrane.coupling0.65.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,membrane.coupling0.80.uncompensatedCents,5.85132
+tuning/coupling compensation keeps pitch,membrane.coupling0.80.compensatedCents,0.267716
+tuning/coupling compensation keeps pitch,membrane.coupling0.80.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,membrane.coupling1.00.uncompensatedCents,8.6612
+tuning/coupling compensation keeps pitch,membrane.coupling1.00.compensatedCents,0.319214
+tuning/coupling compensation keeps pitch,membrane.coupling1.00.noteVsStrongest_dB,0
+tuning/coupling compensation keeps pitch,worstCents_upTo0.65,1.18982
+tuning/coupling compensation keeps pitch,worstCents_0.8to1.0,6.28547
+tuning/compensation converges near unison,cases,56
+tuning/compensation converges near unison,worstCoreLoopWobbleCents,0.181097
+tuning/compensation converges near unison,worstTailVsRelease_dB,-11.1902
+tuning/compensation converges near unison,worstLateDecay_dB_per_0.8s,-5.01699
+ui/field frame cost,fieldFrameMs_2x_width1080,4.51765
+ui/field frame cost,fieldFrameMs_2x_width1440,4.38463
+ui/dragging a node moves and retunes it,radiusChange,0.0322
+ui/dragging a node moves and retunes it,angleChange,0.0434
+ui/dragging a node moves and retunes it,landingErrorPx,0.0382672
+ui/alt-drag records a looping gesture,gestureSeconds,0.397412
+ui/selector tiles, random and freeze drive the parameters,couplingAfterRandom,0.4275
+ui/audio cost with the editor closed and open,guiClosed.audioPercentOfCore,8.84928
+ui/audio cost with the editor closed and open,guiOpen.audioPercentOfCore,8.94207
+ui/audio cost with the editor closed and open,guiOpen.framesDrawn,178
+ui/audio cost with the editor closed and open,guiOpen.frameMs,3.00505
+ui/audio cost with the editor closed and open,guiOpen.messageThreadLoadPercent,17.75
+ui/audio cost with the editor closed and open,guiOpen.fullWindowRepaintMs,9.438
+voices/polyphony storms without stuck voices,strike.poly1.maxActiveVoices,2
+voices/polyphony storms without stuck voices,strike.poly1.steals,47
+voices/polyphony storms without stuck voices,strike.poly1.hardSteals,0
+voices/polyphony storms without stuck voices,strike.poly1.activeAtEnd,0
+voices/polyphony storms without stuck voices,strike.poly1.peak,0.370951
+voices/polyphony storms without stuck voices,bow.poly1.maxActiveVoices,2
+voices/polyphony storms without stuck voices,bow.poly1.steals,47
+voices/polyphony storms without stuck voices,bow.poly1.hardSteals,0
+voices/polyphony storms without stuck voices,bow.poly1.activeAtEnd,0
+voices/polyphony storms without stuck voices,bow.poly1.peak,0.147886
+voices/polyphony storms without stuck voices,strike.poly4.maxActiveVoices,5
+voices/polyphony storms without stuck voices,strike.poly4.steals,44
+voices/polyphony storms without stuck voices,strike.poly4.hardSteals,0
+voices/polyphony storms without stuck voices,strike.poly4.activeAtEnd,0
+voices/polyphony storms without stuck voices,strike.poly4.peak,0.685987
+voices/polyphony storms without stuck voices,bow.poly4.maxActiveVoices,5
+voices/polyphony storms without stuck voices,bow.poly4.steals,44
+voices/polyphony storms without stuck voices,bow.poly4.hardSteals,0
+voices/polyphony storms without stuck voices,bow.poly4.activeAtEnd,0
+voices/polyphony storms without stuck voices,bow.poly4.peak,0.416483
+voices/polyphony storms without stuck voices,strike.poly8.maxActiveVoices,9
+voices/polyphony storms without stuck voices,strike.poly8.steals,40
+voices/polyphony storms without stuck voices,strike.poly8.hardSteals,0
+voices/polyphony storms without stuck voices,strike.poly8.activeAtEnd,0
+voices/polyphony storms without stuck voices,strike.poly8.peak,0.865427
+voices/polyphony storms without stuck voices,bow.poly8.maxActiveVoices,9
+voices/polyphony storms without stuck voices,bow.poly8.steals,40
+voices/polyphony storms without stuck voices,bow.poly8.hardSteals,0
+voices/polyphony storms without stuck voices,bow.poly8.activeAtEnd,0
+voices/polyphony storms without stuck voices,bow.poly8.peak,0.494258
+voices/polyphony storms without stuck voices,strike.poly16.maxActiveVoices,17
+voices/polyphony storms without stuck voices,strike.poly16.steals,32
+voices/polyphony storms without stuck voices,strike.poly16.hardSteals,0
+voices/polyphony storms without stuck voices,strike.poly16.activeAtEnd,0
+voices/polyphony storms without stuck voices,strike.poly16.peak,0.93419
+voices/polyphony storms without stuck voices,bow.poly16.maxActiveVoices,17
+voices/polyphony storms without stuck voices,bow.poly16.steals,32
+voices/polyphony storms without stuck voices,bow.poly16.hardSteals,0
+voices/polyphony storms without stuck voices,bow.poly16.activeAtEnd,0
+voices/polyphony storms without stuck voices,bow.poly16.peak,0.595068
+voices/voice stealing is click free,steals,1
+voices/voice stealing is click free,worstHfSpikeDb,4.6911
+voices/stealing prefers the quietest released voice,stolenNote,-1
+voices/sustain pedal holds releases,bowedRmsDb_pedalHeld,-20.8699
+voices/sustain pedal holds releases,bowedRmsDb_afterPedalUp,-92.2433
+voices/pitch bend is accurate,range2.centsBeforeBend,0.0526643
+voices/pitch bend is accurate,range2.centsAfterFullBend,0.00549864
+voices/pitch bend is accurate,range12.centsBeforeBend,0.0526643
+voices/pitch bend is accurate,range12.centsAfterFullBend,0.001786
+voices/release semantics per exciter,strike.levelDb_at1.2s.releaseDamping0,-31.1843
+voices/release semantics per exciter,strike.levelDb_at1.2s.releaseDamping1,-240
+voices/same note restrike reuses the voice,activeVoices,1
+voices/mpe per-note pitch bend,bentNoteCents_vs_D3,0.00640428
+voices/mpe per-note pitch bend,otherNoteCents_vs_G3,0.00970987
+voices/legato glides one network,activeVoices,1
+voices/legato glides one network,glideTargetCents,-0.00648545
+voices/midi is sample accurate,offset0.firstSample,23
+voices/midi is sample accurate,offset17.firstSample,23
+voices/midi is sample accurate,offset101.firstSample,23
+voices/midi is sample accurate,offset255.firstSample,23

@@ -568,6 +568,6 @@ TEST_CASE ("network", "cpu")
                  (net.fullDesignCount - designsBefore) / (2.0e6 / sr));
         MEASURE ("retunesPerSecond_drifting" + tag, (net.retuneCount - retunesBefore) / (2.0e6 / sr));
         MEASURE ("coreFractionPerVoice_drifting" + tag, nsDrift * sr * 1e-9);
-        CHECK (nsDrift < 400.0);
+        CHECK (! arctest::timingChecksEnabled || nsDrift < 400.0);
     }
 }

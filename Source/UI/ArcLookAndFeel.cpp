@@ -51,7 +51,7 @@ void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds
     const float ringR = outer * (style == KnobStyle::macro ? 0.74f : 0.72f);
     const float faceR = ringR * (style == KnobStyle::macro ? 0.8f : 0.76f);
     const int numDots = style == KnobStyle::macro ? 41 : style == KnobStyle::master ? 29 : 23;
-    const float dotSize = outer * (style == KnobStyle::macro ? 0.035f : 0.045f);
+    const float dotSize = outer * (style == KnobStyle::macro ? 0.04f : 0.047f);
     const float alpha = enabled ? 1.0f : 0.4f;
 
     // --- segmented value arc --------------------------------------------------------
@@ -70,14 +70,14 @@ void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds
             // Brighter near the pointer: energy gathers at the value.
             const float nearValue = 1.0f - juce::jlimit (0.0f, 1.0f, std::abs (a - valueAngle) / 1.6f);
             const float glow = (0.35f + 0.65f * nearValue) * alpha;
-            g.setColour (colours::cyan.withAlpha (0.18f * glow));
-            g.fillEllipse (juce::Rectangle<float> (dotSize * 3.2f, dotSize * 3.2f).withCentre (p));
+            g.setColour (colours::cyan.withAlpha (0.24f * glow));
+            g.fillEllipse (juce::Rectangle<float> (dotSize * 3.4f, dotSize * 3.4f).withCentre (p));
             g.setColour (colours::cyanBright.interpolatedWith (colours::cyan, 1.0f - nearValue).withAlpha (glow));
             g.fillEllipse (juce::Rectangle<float> (dotSize * 1.5f, dotSize * 1.5f).withCentre (p));
         }
         else
         {
-            g.setColour ((onGlass ? colours::glassFaint : colours::inkFaint).withAlpha (0.55f * alpha));
+            g.setColour ((onGlass ? colours::glassFaint : colours::inkMuted).withAlpha (0.6f * alpha));
             g.fillEllipse (juce::Rectangle<float> (dotSize, dotSize).withCentre (p));
         }
     }
@@ -89,11 +89,12 @@ void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds
     // --- machined silver ring -----------------------------------------------------------
     {
         const auto ring = juce::Rectangle<float> (ringR * 2.0f, ringR * 2.0f).withCentre (c);
-        juce::ColourGradient metal (juce::Colour (0xfff9fafb), ring.getX(), ring.getY(), juce::Colour (0xff8d949c), ring.getRight(),
+        // Polished chrome: bright top-left, a dark band, a second reflection, dark lower edge.
+        juce::ColourGradient metal (juce::Colour (0xfffcfdfe), ring.getX(), ring.getY(), juce::Colour (0xff6f7780), ring.getRight(),
                                     ring.getBottom(), false);
-        metal.addColour (0.35, juce::Colour (0xffe1e4e7));
-        metal.addColour (0.62, juce::Colour (0xffaeb4bb));
-        metal.addColour (0.8, juce::Colour (0xffd0d4d8));
+        metal.addColour (0.3, juce::Colour (0xffdde1e6));
+        metal.addColour (0.56, juce::Colour (0xff959da6));
+        metal.addColour (0.78, juce::Colour (0xffdbdfe4));
         if (onGlass)
         {
             metal = juce::ColourGradient (juce::Colour (0xff6d7680), ring.getX(), ring.getY(), juce::Colour (0xff262c33), ring.getRight(),
@@ -104,8 +105,8 @@ void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds
         g.fillEllipse (ring);
         g.setColour (juce::Colours::white.withAlpha (onGlass ? 0.15f : 0.85f));
         g.drawEllipse (ring.reduced (0.6f), 0.9f);
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.drawEllipse (ring, 0.8f);
+        g.setColour (juce::Colours::black.withAlpha (onGlass ? 0.35f : 0.42f));
+        g.drawEllipse (ring, 1.0f);
     }
 
     // --- graphite face -------------------------------------------------------------------

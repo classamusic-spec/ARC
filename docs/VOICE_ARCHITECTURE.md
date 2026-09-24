@@ -7,7 +7,8 @@ Code: `Source/Engine/ArcEngine.*`, `Source/Engine/ArcVoice.*`. Gate: `Tests/Voic
 
 ```
 MIDI ─► ArcEngine ─┬─► voice allocator (20 physical voices, 1–16 polyphony limit)
-                   ├─► global control (every ~0.33 ms): material morph, geometry, coupling
+                   ├─► global control (every control period — QUALITY: HIGH 0.33 ms,
+                   │   NORMAL 0.67 ms, ECO 1.33 ms): material morph, geometry, coupling
                    │   generators, bend / freeze smoothing  ─► VoiceControl (shared)
                    ├─► ArcVoice × N: exciter ↔ resonant network, per-note pitch / energy /
                    │   expression, own control clock, telemetry
@@ -25,8 +26,8 @@ MIDI ─► ArcEngine ─┬─► voice allocator (20 physical voices, 1–16 p
   stacking a second network of the same pitch.
 * **Release semantics.** STRIKE / PLUCK keep ringing after note-off; RELEASE DAMPING
   (0..1) applies a damper (T60 × 0.03^(d^0.7), smoothed). BOW lifts the bow, AIR stops
-  the breath; the body then decays. Voices end after 64 control blocks below −100 dB
-  with no active excitation.
+  the breath; the body then decays. Voices end after ~21 ms below −100 dB (mean square)
+  with no active excitation (time based, independent of QUALITY).
 * **Sample-accurate MIDI.** The processor splits the block at every event; voices keep
   their own control clock (updates every `controlInterval` samples of *their* time), so
   splitting never forces extra network redesigns.
@@ -44,7 +45,7 @@ MIDI ─► ArcEngine ─┬─► voice allocator (20 physical voices, 1–16 p
 | Check | Result |
 |---|---|
 | Storms at polyphony 1/4/8/16, STRIKE and BOW | max active = poly + 1, hard steals 0, stuck voices 0, peak ≤ 0.97, all finite |
-| Steal of a ringing METAL voice | worst impulsive HF event 2.9 dB above neighbours (no click) |
+| Steal of a ringing METAL voice | worst impulsive HF event 2.9 dB above neighbours at Phase 7 (0.33 ms control period); 4.7 dB at the release default (NORMAL, 0.67 ms). A click would be ≥ 12 dB |
 | Victim choice | quietest released note stolen, held notes survive |
 | Sustain pedal | bowing continues after note-off (−22 dB), ends after pedal-up (−66 dB) |
 | Pitch bend ±2 / ±12 st | 0.004 / 0.0006 cents after full bend |
@@ -54,15 +55,13 @@ MIDI ─► ArcEngine ─┬─► voice allocator (20 physical voices, 1–16 p
 | Legato | one voice, glide lands within 0.015 cents |
 | Sample accuracy | identical onset offset for events at block offsets 0/17/101/255 |
 
-## CPU (Release, one core of the build machine, `docs/measurements/phase7/cpu_profile.csv`)
+## CPU
 
-| voices | 44.1 kHz strike / bow | 48 kHz strike / bow | 96 kHz strike / bow |
-|---|---|---|---|
-| 1 | 1.4 % / 1.0 % | 1.1 % / 1.4 % | 1.6 % / 1.5 % |
-| 4 | 4.8 % / 3.5 % | 4.1 % / 4.7 % | 6.5 % / 6.7 % |
-| 8 | 7.7 % / 6.8 % | 7.7 % / 7.6 % | 10.0 % / 10.6 % |
-| 16 | 14.1 % / 14.8 % | 16.4 % / 17.6 % | 21.6 % / 25.2 % |
+Current figures (release candidate, NORMAL quality) are in DSP_ARCHITECTURE §7 and
+`docs/measurements/release/cpu_profile.csv`. For example, 16 voices at 48 kHz cost
+10.6 % (strike) / 12.3 % (bow) of one core, and 20.0 % at 96 kHz (bow).
 
-COUPLING 0 vs 1, CHAOS 1, MOTION 1 (8 voices, 48 kHz): 7.2–8.0 %, i.e. cost does not
-depend on the sound. Polyphony default 8, maximum 16 — both measured to fit easily.
-The quality modes currently differ by < 1 % (see the optimisation phase).
+History (`docs/measurements/phase7/cpu_profile.csv`): in Phase 7, every quality ran
+at a 0.33 ms control period, so 16 voices at 48 kHz cost 16.4 / 17.6 % and the modes
+differed by < 1 %. Phase 13 made QUALITY set the control period (ECO 8.3 %, NORMAL
+11.8 %, HIGH 18.7 % for 16 bowed voices). Polyphony default 8, maximum 16.

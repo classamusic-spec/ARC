@@ -80,7 +80,7 @@ void SelectorPanel::paint (juce::Graphics& g)
     drawTrackedText (g, heading, { x, b.getY() + 40.0f, b.getWidth() - 60.0f, 22.0f }, Fonts::regular (16.5f, 0.3f),
                      juce::Justification::centredLeft);
     g.setColour (colours::inkMuted);
-    drawTrackedText (g, subheading, { x, b.getY() + 63.0f, b.getWidth() - 60.0f, 14.0f }, Fonts::regular (9.5f, 0.24f),
+    drawTrackedText (g, subheading, { x, b.getY() + 63.0f, b.getWidth() - 60.0f, 14.0f }, Fonts::regular (10.0f, 0.24f),
                      juce::Justification::centredLeft);
     // Accent rule: a short cyan-tinted stroke over a long hairline.
     const float ry = b.getY() + 92.0f;
