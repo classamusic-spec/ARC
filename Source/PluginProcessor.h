@@ -53,6 +53,10 @@ public:
 
     static constexpr int stateVersion = 1;
 
+    /** Last editor width used with this instance (restored with the DAW state). */
+    int getEditorWidth() const noexcept { return editorWidth.load (std::memory_order_relaxed); }
+    void setEditorWidth (int w) noexcept { editorWidth.store (w, std::memory_order_relaxed); }
+
 private:
     void handleMidiMessage (const juce::MidiMessage& m) noexcept;
     void updateTransport() noexcept;
@@ -71,6 +75,7 @@ private:
     std::array<std::atomic<uint32_t>, 4> gestureSerial {};
     std::array<uint32_t, 4> appliedGestureSerial {};
     std::atomic<uint32_t> seed { 0xA2C1u };
+    std::atomic<int> editorWidth { 1080 };
 
     std::unique_ptr<arc::PresetManager> presets;
 

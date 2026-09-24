@@ -519,6 +519,9 @@ void ArcEngine::publishTelemetry (int n, double seconds) noexcept
     Telemetry::store (telemetry.activeVoices, active);
     Telemetry::store (telemetry.freezeAmount, control.freeze);
     Telemetry::store (telemetry.motionPhase, motion.displayPhase());
+    Telemetry::store (telemetry.bpm, static_cast<float> (transport.valid && transport.bpm > 1.0 ? transport.bpm : 120.0));
+    Telemetry::store (telemetry.beatsPerBar, static_cast<float> (transport.beatsPerBar));
+    Telemetry::store (telemetry.hostPlaying, transport.valid && transport.playing);
     for (size_t i = 0; i < 4; ++i)
     {
         Telemetry::store (telemetry.nodeRadius[i], effectiveNodes[i].radius);
@@ -526,14 +529,16 @@ void ArcEngine::publishTelemetry (int n, double seconds) noexcept
         Telemetry::store (telemetry.nodeRatio[i],
                           control.material.nodeRatio[i] * std::exp2 (control.nodeOffsetOctaves[i]));
     }
-    // Meters: peak hold decays in the UI; RMS smoothed here.
-    Telemetry::store (telemetry.peakL, std::max (output.lastPeak[0], Telemetry::load (telemetry.peakL) * 0.0f));
-    Telemetry::store (telemetry.peakR, output.lastPeak[1]);
+    // Meters: the audio thread accumulates the peak since the UI last read it (the UI
+    // exchanges it with 0), so no block's peak is missed between frames.
+    Telemetry::store (telemetry.peakL, std::max (output.lastPeak[0], Telemetry::load (telemetry.peakL)));
+    Telemetry::store (telemetry.peakR, std::max (output.lastPeak[1], Telemetry::load (telemetry.peakR)));
     Telemetry::store (telemetry.rmsL, std::sqrt (output.lastMeanSquare[0]));
     Telemetry::store (telemetry.rmsR, std::sqrt (output.lastMeanSquare[1]));
     const double budget = n / sampleRate;
     const float load = static_cast<float> (seconds / std::max (budget, 1.0e-9));
     Telemetry::store (telemetry.cpuLoad, 0.9f * Telemetry::load (telemetry.cpuLoad) + 0.1f * load);
+    Telemetry::store (telemetry.blockCounter, Telemetry::load (telemetry.blockCounter) + 1u);
 }
 
 } // namespace arc

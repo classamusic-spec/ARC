@@ -36,8 +36,12 @@ struct Telemetry
     std::atomic<uint32_t> strikeCounter { 0 }; // increments on each transient excitation
     std::atomic<float> lastStrikeEnergy { 0.0f };
     std::atomic<float> motionPhase { 0.0f };
+    std::atomic<float> bpm { 120.0f };        // host tempo (120 when unknown) for gesture tempo snap
+    std::atomic<float> beatsPerBar { 4.0f };
+    std::atomic<bool> hostPlaying { false };
     std::atomic<float> cpuLoad { 0.0f };       // fraction of real time used by the engine
     std::atomic<uint32_t> nonFiniteEvents { 0 };
+    std::atomic<uint32_t> blockCounter { 0 };  // increments every published block (UI: "engine running")
 
     template <typename T>
     static void store (std::atomic<T>& a, T v) noexcept { a.store (v, std::memory_order_relaxed); }

@@ -7,7 +7,40 @@ namespace
 {
 using APF = juce::AudioParameterFloat;
 using APC = juce::AudioParameterChoice;
-using APB = juce::AudioParameterBool;
+/** On/off parameter that snaps every write to 0 or 1. JUCE's AudioParameterBool keeps
+    any normalised value a host writes (e.g. 0.4) while the value tree stores the snapped
+    one, so a later restore of "0" can be skipped as unchanged and leave 0.4 behind
+    (found by pluginval's state-restoration test). */
+class SnappingBool final : public juce::RangedAudioParameter
+{
+public:
+    SnappingBool (const juce::ParameterID& id, const juce::String& parameterName, bool defaultValue)
+        : juce::RangedAudioParameter (id, parameterName, juce::AudioProcessorParameterWithIDAttributes()),
+          value (defaultValue ? 1.0f : 0.0f), defaultNormalised (defaultValue ? 1.0f : 0.0f)
+    {
+    }
+
+    float getValue() const override { return value.load (std::memory_order_relaxed); }
+    void setValue (float v) override { value.store (v >= 0.5f ? 1.0f : 0.0f, std::memory_order_relaxed); }
+    float getDefaultValue() const override { return defaultNormalised; }
+    int getNumSteps() const override { return 2; }
+    bool isDiscrete() const override { return true; }
+    bool isBoolean() const override { return true; }
+    juce::String getText (float v, int) const override { return v >= 0.5f ? "On" : "Off"; }
+    float getValueForText (const juce::String& text) const override
+    {
+        const auto t = text.trim().toLowerCase();
+        return (t == "on" || t == "1" || t == "yes" || t == "true") ? 1.0f : 0.0f;
+    }
+    juce::StringArray getAllValueStrings() const override { return { "Off", "On" }; }
+    const juce::NormalisableRange<float>& getNormalisableRange() const override { return range; }
+
+private:
+    std::atomic<float> value;
+    const float defaultNormalised;
+    const juce::NormalisableRange<float> range { 0.0f, 1.0f, 1.0f };
+};
+using APB = SnappingBool;
 using API = juce::AudioParameterInt;
 using Range = juce::NormalisableRange<float>;
 

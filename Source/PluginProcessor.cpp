@@ -197,6 +197,7 @@ void ArcAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty ("version", stateVersion, nullptr);
     state.setProperty ("pluginVersion", ARC_VERSION_STRING, nullptr);
     state.setProperty ("seed", juce::String (static_cast<juce::int64> (getSeed())), nullptr);
+    state.setProperty ("editorWidth", getEditorWidth(), nullptr);
     state.appendChild (apvts.copyState(), nullptr);
 
     juce::ValueTree gestures ("GESTURES");
@@ -251,6 +252,7 @@ void ArcAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         setGesture (n, restored[static_cast<size_t> (n)]);
 
     setSeed (static_cast<uint32_t> (tree.getProperty ("seed", "0").toString().getLargeIntValue()));
+    setEditorWidth (juce::jlimit (900, 1800, static_cast<int> (tree.getProperty ("editorWidth", 1080))));
 
     // Preset metadata belongs to the message thread; hosts may restore from elsewhere.
     const auto presetState = tree.getChildWithName ("PRESET").createCopy();
