@@ -219,7 +219,7 @@ SettingsCard::SettingsCard (ArcAudioProcessor& p) : GlassCard ("Settings")
     voiceMode.attach (*state.getParameter (params::voiceMode));
     voiceMode.setTooltip ("VOICE MODE\nPOLY chords, MONO single notes, LEGATO glides one network between notes.");
     quality.attach (*state.getParameter (params::quality));
-    quality.setTooltip ("QUALITY\nNetwork dispersion detail: ECO saves CPU, HIGH for rendering.");
+    quality.setTooltip ("QUALITY\nNetwork update rate and dispersion detail: ECO about -30 % CPU, HIGH about +65 % (for rendering).");
     polyphony.attach (state, params::polyphony);
     polyphony.setValueFormatter ([] (double v) { return juce::String (juce::roundToInt (v)); });
     polyphony.setHelp ("VOICES", "Maximum simultaneous notes (about 1 % CPU each).");

@@ -66,6 +66,7 @@ TEST_CASE ("ui", "editor snapshots")
     // 1. Opening state: Obsidian Bloom, a bowed chord blooming.
     play (proc, ed, 1.2, { 48, 55, 63 }, true);
     save (*ed, "01_obsidian_bloom");
+    save (*ed, "01_obsidian_bloom_2x", 2.0f);
 
     // 2. A struck preset right after the strike, with a node inspector open.
     auto& pm = proc.getPresetManager();

@@ -72,7 +72,11 @@ public:
     /** Statistics for tests / profiling. */
     uint64_t stealCount = 0, hardStealCount = 0, nonFiniteVoiceResets = 0;
 
+    /** Control interval in samples for a QUALITY at a sample rate. */
+    static int intervalFor (Quality q, double sampleRate) noexcept;
+
 private:
+    void applyControlInterval (int n) noexcept;
     void updateGlobalControl() noexcept;
     void renderChunk (float* left, float* right, int n) noexcept;
     void publishTelemetry (int n, double seconds) noexcept;

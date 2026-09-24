@@ -30,6 +30,8 @@ public:
     };
 
     void prepare (double sampleRate, int controlInterval);
+    /** Takes effect at the voice's next control boundary (QUALITY switch, glitch free). */
+    void setControlInterval (int n) noexcept { pendingInterval = n; }
     void reset() noexcept;
 
     void start (int note, int channel, float velocity, uint32_t seed, const VoiceControl& ctl) noexcept;
@@ -101,6 +103,8 @@ private:
     std::array<double, dsp::kNumNodes> intendedFrequency {};
     double sampleRate = 48000.0;
     int controlInterval = 16;
+    int pendingInterval = 0;
+    int silentSamples = 0;
     int controlCounter = 0;
     uint64_t age = 0;
 

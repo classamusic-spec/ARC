@@ -401,8 +401,6 @@ void ArcAudioProcessorEditor::renderBackground (juce::Graphics& g)
     drawTrackedText (g, "OUTPUT", L::masterLabel.toFloat().withTrimmedTop (16.0f).withHeight (14.0f), Fonts::regular (10.5f, 0.3f),
                      juce::Justification::centredLeft);
 
-    // Motion mark above the MOTION knob.
-    arc::gfx::drawIcon (g, arc::gfx::Icon::motion, juce::Rectangle<float> (18.0f, 18.0f).withCentre ({ 90.0f, 648.0f }), colours::inkFaint, 1.1f);
 }
 
 // ---------------------------------------------------------------------------------------

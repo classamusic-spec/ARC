@@ -166,6 +166,8 @@ public:
     const Matrix5& targetMatrix() const noexcept { return qTarget; }
     const WaveguideResonator& loop (int i) const noexcept { return loops[static_cast<size_t> (i)]; }
     int getControlInterval() const noexcept { return controlInterval; }
+    /** Ramp length for the next configure() (QUALITY changes the control rate live). */
+    void setControlInterval (int n) noexcept { controlInterval = n > 0 ? n : 1; }
     double getSampleRate() const noexcept { return sampleRate; }
 
     /** Number of full loop redesigns performed (profiling / tests). */

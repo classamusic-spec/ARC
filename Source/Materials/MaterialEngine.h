@@ -40,6 +40,16 @@ private:
     EffectiveMaterial eff;
     float progress = 1.0f; // 0..1 along the morph
     float step = 0.01f;    // progress per update
+    double morphTime = 0.3;
+
+public:
+    /** Changes the update rate (QUALITY) without disturbing a morph in progress. */
+    void setUpdateRate (double updatesPerSecond) noexcept
+    {
+        step = static_cast<float> (1.0 / std::max (1.0, morphTime * updatesPerSecond));
+    }
+
+private:
     float settled = 1.0f;
 };
 

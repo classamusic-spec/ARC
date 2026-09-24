@@ -108,9 +108,10 @@ void SelectorTile::paintButton (juce::Graphics& g, bool over, bool down)
         juce::ColourGradient face (colours::graphiteHigh, r.getX(), r.getY(), colours::chamber, r.getX(), r.getBottom(), false);
         g.setGradientFill (face);
         g.fillRoundedRectangle (r, radius);
-        // Inner top sheen
-        g.setColour (juce::Colours::white.withAlpha (0.06f));
-        g.fillRoundedRectangle (r.reduced (2.0f).withHeight (r.getHeight() * 0.42f), radius - 1.0f);
+        // Inner top sheen, fading down
+        g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (0.08f), r.getX(), r.getY(),
+                                                 juce::Colours::white.withAlpha (0.0f), r.getX(), r.getCentreY(), false));
+        g.fillRoundedRectangle (r.reduced (2.0f), radius - 1.0f);
         g.setColour (colours::cyan.withAlpha (over ? 1.0f : 0.85f));
         g.drawRoundedRectangle (r, radius, 1.3f);
     }
@@ -153,12 +154,12 @@ void RoundButton::paintButton (juce::Graphics& g, bool over, bool down)
 {
     const auto b = getLocalBounds().toFloat();
     const float labelH = 22.0f;
-    const float d = juce::jmin (b.getWidth(), b.getHeight() - labelH) - 4.0f;
-    auto circle = juce::Rectangle<float> (d, d).withCentre ({ b.getCentreX(), b.getY() + 2.0f + d * 0.5f });
+    const float d = juce::jmin (b.getWidth(), b.getHeight() - labelH) - 12.0f; // room for the shadow
+    auto circle = juce::Rectangle<float> (d, d).withCentre ({ b.getCentreX(), b.getY() + 4.0f + d * 0.5f });
     const bool on = getToggleState() || activity > 0.05f;
     const float glow = juce::jmax (getToggleState() ? 1.0f : 0.0f, activity);
 
-    gfx::paintContactShadow (g, circle.expanded (d * 0.12f).translated (0.0f, d * 0.08f), 0.3f);
+    gfx::paintContactShadow (g, circle.expanded (d * 0.07f).translated (0.0f, d * 0.05f), 0.3f);
     if (glow > 0.0f)
         for (int i = 3; i >= 1; --i)
         {

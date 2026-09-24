@@ -388,10 +388,12 @@ void ResonanceField::paintRings (juce::Graphics& g, float tension)
         g.setGradientFill (cg);
         g.drawLine ({ a, c2 }, 0.8f);
     };
-    line ({ centre.x, centre.y - ry * ext }, { centre.x, centre.y + ry * ext });
+    // The vertical axis starts below the caption (title + subtitle).
+    const float axisTop = juce::jmax (centre.y - ry * ext, (float) getLocalBounds().getY() + getHeight() * 0.055f + 50.0f);
+    line ({ centre.x, axisTop }, { centre.x, centre.y + ry * ext });
     line ({ centre.x - rx * ext, centre.y }, { centre.x + rx * ext, centre.y });
     // Axis end glints (cyan), as in the reference.
-    for (auto p : { juce::Point<float> (centre.x, centre.y - ry * 0.99f), juce::Point<float> (centre.x, centre.y + ry * 0.99f) })
+    for (auto p : { juce::Point<float> (centre.x, axisTop + 4.0f), juce::Point<float> (centre.x, centre.y + ry * 0.99f) })
     {
         g.setColour (colours::cyan.withAlpha (0.12f));
         g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre (p));

@@ -65,6 +65,7 @@ void ArcVoice::reset() noexcept
     gainFactor.fill (1.0);
     sustainedByPedal = false;
     silentBlocks = 0;
+    silentSamples = 0;
 }
 
 void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t seed, const VoiceControl& ctl) noexcept
@@ -98,6 +99,7 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
     sustainedByPedal = false;
     nonFiniteDetected = false;
     silentBlocks = 0;
+    silentSamples = 0;
     smoothEnergy.fill (0.0f);
     freqShift.fill (0.0);
     gainFactor.fill (1.0);
@@ -153,6 +155,7 @@ void ArcVoice::restrike (float newVelocity, uint32_t seed, const VoiceControl& c
     gainStep = 0.0f;
     sustainedByPedal = false;
     silentBlocks = 0;
+    silentSamples = 0;
     releaseT60Mult = 1.0f;
     triggerExciter (ctl, seed);
 }
@@ -170,6 +173,7 @@ void ArcVoice::glideTo (int newNote, float newVelocity, float glideSeconds, bool
     gainStep = 0.0f;
     sustainedByPedal = false;
     silentBlocks = 0;
+    silentSamples = 0;
     releaseT60Mult = 1.0f;
     if (reexcite)
     {
@@ -217,11 +221,14 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     const float targetRelease = state == State::released
                                     ? std::pow (0.03f, std::pow (clamp (ctl.releaseDamping, 0.0f, 1.0f), 0.7f))
                                     : 1.0f;
-    releaseT60Mult = immediate ? targetRelease : targetRelease + 0.85f * (releaseT60Mult - targetRelease);
+    // Per-block smoothing expressed in time (2 ms / 1.2 ms), so every QUALITY behaves alike.
+    const float blockSeconds = static_cast<float> (controlInterval / sr);
+    const float releaseKeep = std::exp (-blockSeconds / 0.002f);
+    releaseT60Mult = immediate ? targetRelease : targetRelease + releaseKeep * (releaseT60Mult - targetRelease);
     pluckDampMult = voiceExciter == ExciterType::pluck ? std::exp2 (-4.0f * ctl.exciter.pluckDamp) : 1.0f;
     // FREEZE: only voices that were sounding when it engaged are captured.
     const float freezeTarget = freezeEpochAtStart < ctl.freezeEpoch ? ctl.freeze : 0.0f;
-    voiceFreeze = immediate ? freezeTarget : voiceFreeze + 0.25f * (freezeTarget - voiceFreeze);
+    voiceFreeze = immediate ? freezeTarget : voiceFreeze + (1.0f - std::exp (-blockSeconds / 0.0012f)) * (freezeTarget - voiceFreeze);
     const float freezeMult = 1.0f + 1.0e4f * voiceFreeze * voiceFreeze;
 
     // Energy governor: a frozen network is (nearly) lossless, and time-varying delays
@@ -234,7 +241,7 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
     {
         if (! governorCaptured)
         {
-            if (++governorSettle > 16)
+            if (++governorSettle > std::max (4, static_cast<int> (0.005 * sr / controlInterval))) // ~5 ms
             {
                 governorReference = std::max (energyTotal, 1.0e-12f);
                 governorCaptured = true;
@@ -454,6 +461,12 @@ void ArcVoice::render (float* outL, float* outR, int n, const VoiceControl& ctl)
                 finishBlock (blockSamples, ctl);
             if (state == State::idle)
                 break;
+            if (pendingInterval > 0 && pendingInterval != controlInterval)
+            {
+                controlInterval = pendingInterval;
+                network.setControlInterval (controlInterval);
+            }
+            pendingInterval = 0;
             updateControl (ctl, false);
             samplesToControl = controlInterval;
         }
@@ -540,11 +553,15 @@ void ArcVoice::finishBlock (int n, const VoiceControl&) noexcept
     const bool excitationDone = ! exciter.isActive() && (state == State::released || ! exciter.isSustained());
     if (excitationDone && blockLevel < kSilenceLevel && voiceFreeze < 0.5f)
     {
-        if (++silentBlocks > 64)
+        silentSamples += n;
+        if (++silentBlocks > 4 && silentSamples > static_cast<int> (0.021 * sampleRate)) // ~21 ms of silence
             state = State::idle;
     }
     else
+    {
         silentBlocks = 0;
+        silentSamples = 0;
+    }
 }
 
 } // namespace arc

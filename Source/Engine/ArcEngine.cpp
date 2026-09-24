@@ -14,8 +14,7 @@ void ArcEngine::prepare (double newSampleRate, int maxBlockSize)
 {
     sampleRate = newSampleRate;
     maxBlock = std::max (32, maxBlockSize);
-    // ~0.33 ms control period at every rate.
-    controlInterval = sampleRate > 150000.0 ? 64 : sampleRate > 70000.0 ? 32 : 16;
+    controlInterval = intervalFor (params.quality, sampleRate);
     for (auto& v : voices)
         v.prepare (sampleRate, controlInterval);
     material.setMaterial (params.material, true);
@@ -61,6 +60,14 @@ void ArcEngine::postSeed (uint32_t seed) noexcept
     seedPending.store (true, std::memory_order_release);
 }
 
+int ArcEngine::intervalFor (Quality q, double sr) noexcept
+{
+    // Control period (network redesign, coupling compensation, envelopes): HIGH 0.33 ms,
+    // NORMAL 0.67 ms, ECO 1.33 ms — the dominant CPU cost (see docs/DSP_ARCHITECTURE.md).
+    const int base = sr > 150000.0 ? 64 : sr > 70000.0 ? 32 : 16;
+    return q == Quality::high ? base : q == Quality::eco ? base * 4 : base * 2;
+}
+
 void ArcEngine::setParameters (const EngineParams& p) noexcept
 {
     const bool qualityChanged = p.quality != params.quality;
@@ -68,7 +75,21 @@ void ArcEngine::setParameters (const EngineParams& p) noexcept
     params.polyphony = std::clamp (params.polyphony, 1, kMaxPolyphony);
     if (params.material != material.getMaterial())
         material.setMaterial (params.material, false);
-    (void) qualityChanged; // control interval changes are applied on the next prepare()
+    if (qualityChanged && prepared)
+        applyControlInterval (intervalFor (params.quality, sampleRate));
+}
+
+void ArcEngine::applyControlInterval (int n) noexcept
+{
+    // Live QUALITY switch: every rate-dependent coefficient follows; voices switch at
+    // their next control boundary, mid-note, without re-preparing.
+    controlInterval = n;
+    controlCountdown = std::min (controlCountdown, controlInterval);
+    material.setUpdateRate (sampleRate / controlInterval);
+    bendSmooth.coeff = smoothingCoeff (0.004, sampleRate / controlInterval);
+    freezeSmooth.coeff = smoothingCoeff (0.12, sampleRate / controlInterval);
+    for (auto& v : voices)
+        v.setControlInterval (controlInterval);
 }
 
 uint32_t ArcEngine::nextSeed() noexcept

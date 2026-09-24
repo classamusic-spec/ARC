@@ -44,6 +44,7 @@ MaterialProfile interpolate (const MaterialProfile& a, const MaterialProfile& b,
 
 void MaterialEngine::prepare (double updatesPerSecond, double morphSeconds)
 {
+    morphTime = morphSeconds;
     step = static_cast<float> (1.0 / std::max (1.0, morphSeconds * updatesPerSecond));
     current = from = materialProfile (target);
     progress = 1.0f;
