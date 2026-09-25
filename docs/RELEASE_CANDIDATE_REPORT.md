@@ -23,8 +23,8 @@ could not be tested here says **UNVERIFIED — ENVIRONMENT LIMITATION**.
   `com.arcinstruments.arc`, stereo out, MIDI in, zero latency.
 * Warnings: the engine is built with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wdouble-promotion`,
   the plugin with JUCE's recommended warning flags. A **clean rebuild** from an
-  empty build directory succeeds in 4 min 18 s on 4 cores with **0 warnings** (123
-  build steps: engine, plugin formats, tests).
+  empty build directory succeeds in 5 min 37 s on 4 cores with **0 warnings** (148
+  build steps: engine, plugin formats, the preset library, tests; after Phase 16).
 * Options: `ARC_BUILD_TESTS`, `ARC_ENABLE_LTO`, `ARC_ENABLE_ASAN`, `ARC_ENABLE_UBSAN`,
   `ARC_ENABLE_TSAN`.
 
@@ -244,11 +244,16 @@ re-preparing mid-session. At 96 kHz, 16 voices cost 16.5 / 20.0 %.
   resonator 11, network 11, exciters 6, tuning 8, materials 4, soundcheck 1, voices 10,
   motion / gesture / chaos / freeze / nonlinear 10, presets / random / state 9,
   library 2, performance 3, realtime 2, host 4, ui 7, smoke / docs 2.
-* AddressSanitizer + UndefinedBehaviorSanitizer, final code: the **full suite** (86 tests,
-  939 checks, 325 s). **No reports.**
-* ThreadSanitizer, final code: the 12 threaded tests (realtime concurrency, host, node
-  drag, gesture recording, and the editor at 60 fps against live audio). **No race
-  reports.**
+* AddressSanitizer + UndefinedBehaviorSanitizer, on the Phase 16 code: the **full suite**
+  (90 tests, 1003 checks, 531 s, including the 396-preset audit). **No reports.** (At the
+  release candidate: 86 tests, 939 checks, no reports.)
+* ThreadSanitizer, on the Phase 16 code: 19 threaded tests. They cover realtime
+  concurrency, host, state, preset switching and per-note trims, the library audit
+  rendering on four worker threads (PADS, 36 presets), the editor at 60 fps against live
+  audio, the selector tiles and the preset browser. **No race reports.** One check failed
+  there: the browser's new paint-time limit, which was not yet exempt in sanitizer builds
+  (85 ms under TSan, 4 ms in Release). It is now measured but not enforced in sanitizer
+  builds, like every other timing check.
 * Allocation detector: **0 allocations** on the audio thread in 640 blocks, with MIDI,
   preset / gesture changes and structural automation.
 

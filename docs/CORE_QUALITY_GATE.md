@@ -126,8 +126,8 @@ was judged from rendered snapshots.
 | Bypass / suspend | `host` tests; pluginval |
 | Preset switching | switching 94 presets while notes sound: peak −2.6 dB (the safety clip starts at −3 dBFS), no resets; each note keeps its own patch's level trim (a bell's tail moves −0.7 dB across a switch to a +18 dB patch) |
 | Factory library | 396 presets audited: all clean (chord and hard single notes C2 / C4 / C6 below −1 dBFS), level-calibrated, true to category, 289 / 289 pitched presets in tune, closest pair 2.13 ([PRESETS](PRESETS.md)) |
-| AddressSanitizer + UndefinedBehaviorSanitizer (full suite, 86 tests, final code) | no reports |
-| ThreadSanitizer (12 threaded tests: audio vs message thread, editor at 60 fps, host) | no reports |
+| AddressSanitizer + UndefinedBehaviorSanitizer (full suite, 90 tests, Phase 16 code) | no reports |
+| ThreadSanitizer (19 threaded tests: audio vs message thread, editor at 60 fps, host, state, preset switching, the library audit on four worker threads) | no reports |
 | Allocation detector | 0 allocations on the audio thread |
 | Clean rebuild from an empty build directory | succeeds, 0 warnings |
 | AU build and `auval` | **UNVERIFIED — ENVIRONMENT LIMITATION** (Linux build machine; AU is enabled automatically on macOS) |

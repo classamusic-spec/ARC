@@ -467,3 +467,20 @@ in tune. The closest pair is 2.13 (Reed Array / Sheng Cluster).
 * A 680 × 500 sheet. At 620 × 450 the category rail's last entry was clipped once there
   were 12 categories.
 
+**Validation of the Phase 16 code**
+* Release suite: 90 tests, 1004 checks, 0 failures (103 s).
+* AddressSanitizer + UndefinedBehaviorSanitizer, full suite: 90 tests, 1003 checks, 531 s,
+  no reports. The 396-preset audit under ASan gives the same figures as in Release.
+* ThreadSanitizer: 19 threaded tests, including the library audit rendering on four worker
+  threads. No race reports.
+
+  One check failed there: the browser's new paint-time limit (85 ms under TSan, 4 ms in
+  Release). It is now exempt in sanitizer builds like the other timing checks: measured,
+  not enforced.
+* pluginval 1.0.4, strictness 10, in-process with GUI, with its VST3-validator step:
+  SUCCESS.
+* Steinberg VST3 validator: 47 / 47 standard and 537 / 537 extensive tests.
+* The release build found a `-Wfloat-equal` in the preset builder's octave-fold check. It
+  now counts folds instead of comparing floats.
+* Clean rebuild from an empty build directory: 148 steps, 5 min 37 s, 0 warnings.
+

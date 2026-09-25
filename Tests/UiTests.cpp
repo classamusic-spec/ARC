@@ -485,5 +485,5 @@ TEST_CASE ("ui", "preset browser searches the whole library and paints only what
     MEASURE ("rowsPainted", browser.getLastPaintedRows());
     CHECK (browser.getLastPaintedRows() > 0);
     CHECK (browser.getLastPaintedRows() <= 12); // ~10 rows fit, plus partial rows at the edges
-    CHECK (ms < 40.0);
+    CHECK (! arctest::timingChecksEnabled || ms < 40.0);
 }
