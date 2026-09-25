@@ -181,6 +181,112 @@ Gesture swayGesture (float seconds, float beats, float angleSwing, float radiusS
     return g;
 }
 
+namespace
+{
+Gesture finish (Gesture g, float seconds, float beats)
+{
+    g.durationSeconds = std::max (0.05f, seconds);
+    g.durationBeats = std::max (0.0f, beats);
+    for (auto& r : g.dRadius)
+        r = std::clamp (r, -1.0f, 1.0f);
+    for (auto& a : g.dAngle)
+        a = wrapAngle (a);
+    g.valid = true;
+    return g;
+}
+} // namespace
+
+Gesture figureGesture (float seconds, float beats, float angleSwing, float radiusSwing, int a, int b)
+{
+    Gesture g;
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double t = static_cast<double> (i) / Gesture::kPoints;
+        g.dAngle[static_cast<size_t> (i)] = angleSwing * static_cast<float> (std::sin (2.0 * kPi * a * t));
+        g.dRadius[static_cast<size_t> (i)] = radiusSwing * static_cast<float> (std::sin (2.0 * kPi * b * t));
+    }
+    return finish (g, seconds, beats);
+}
+
+Gesture breatheGesture (float seconds, float beats, float radiusSwing, int cycles)
+{
+    Gesture g;
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double t = static_cast<double> (i) / Gesture::kPoints;
+        // 0 at the loop start (the node begins where it rests), out and back each cycle.
+        g.dRadius[static_cast<size_t> (i)] = radiusSwing * static_cast<float> (0.5 - 0.5 * std::cos (2.0 * kPi * std::max (1, cycles) * t));
+    }
+    return finish (g, seconds, beats);
+}
+
+Gesture stepGesture (float seconds, float beats, const std::vector<float>& radiusSteps, float glide)
+{
+    Gesture g;
+    const int n = static_cast<int> (radiusSteps.size());
+    if (n == 0)
+        return finish (g, seconds, beats);
+    const double glideShare = std::clamp (static_cast<double> (glide), 0.0, 1.0);
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double pos = static_cast<double> (i) / Gesture::kPoints * n;
+        const int k = std::min (n - 1, static_cast<int> (pos));
+        const double within = pos - k;
+        const float current = radiusSteps[static_cast<size_t> (k)];
+        const float previous = radiusSteps[static_cast<size_t> ((k + n - 1) % n)];
+        float v = current;
+        if (glideShare > 0.0 && within < glideShare)
+        {
+            const double x = within / glideShare;
+            v = previous + (current - previous) * static_cast<float> (0.5 - 0.5 * std::cos (kPi * x));
+        }
+        g.dRadius[static_cast<size_t> (i)] = v;
+    }
+    return finish (g, seconds, beats);
+}
+
+Gesture wanderGesture (float seconds, float beats, float angleSwing, float radiusSwing, uint32_t seed)
+{
+    Gesture g;
+    uint32_t s = seed == 0 ? 0x9E3779B9u : seed;
+    auto next = [&s]
+    {
+        s ^= s << 13;
+        s ^= s >> 17;
+        s ^= s << 5;
+        return static_cast<double> (s) / 4294967296.0;
+    };
+    double amp[2][3], phase[2][3];
+    for (int axis = 0; axis < 2; ++axis)
+        for (int h = 0; h < 3; ++h)
+        {
+            amp[axis][h] = (0.35 + 0.65 * next()) / (1.0 + h);
+            phase[axis][h] = 2.0 * kPi * next();
+        }
+    std::array<double, Gesture::kPoints> ang {}, rad {};
+    double peakA = 1.0e-9, peakR = 1.0e-9;
+    for (int i = 0; i < Gesture::kPoints; ++i)
+    {
+        const double t = static_cast<double> (i) / Gesture::kPoints;
+        double a = 0.0, r = 0.0;
+        for (int h = 0; h < 3; ++h)
+        {
+            a += amp[0][h] * std::sin (2.0 * kPi * (h + 1) * t + phase[0][h]);
+            r += amp[1][h] * std::sin (2.0 * kPi * (h + 1) * t + phase[1][h]);
+        }
+        ang[static_cast<size_t> (i)] = a;
+        rad[static_cast<size_t> (i)] = r;
+        peakA = std::max (peakA, std::abs (a));
+        peakR = std::max (peakR, std::abs (r));
+    }
+    for (size_t i = 0; i < ang.size(); ++i)
+    {
+        g.dAngle[i] = angleSwing * static_cast<float> (ang[i] / peakA);
+        g.dRadius[i] = radiusSwing * static_cast<float> (rad[i] / peakR);
+    }
+    return finish (g, seconds, beats);
+}
+
 std::string Gesture::serialise() const
 {
     if (! valid)

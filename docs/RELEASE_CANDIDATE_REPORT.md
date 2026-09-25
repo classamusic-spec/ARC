@@ -146,10 +146,19 @@ Results:
 * **Sync.** Drift and gestures lock to host tempo and position at 1/4, 1/2, 1, 2, 4 or 8
   bars.
 * **Presets and state.**
-  * 46 factory presets in 12 categories, including all 25 names from the brief.
-  * Every preset renders cleanly: momentary loudness −18.4 … −27.9 dB, worst peak
-    −4.8 dBFS, 0 clipped / silent / non-finite / DC. The closest pair is 2.0 dB apart.
-  * Session state restores bit-identically; 65 parameters with stable versioned IDs.
+  * **396 factory presets** in 12 categories: the 46 signature sounds (including all 25
+    names from the brief) and a 350-preset library added after the release candidate
+    (Phase 16; catalogue in [PRESETS](PRESETS.md)).
+  * The library audit renders every preset: 396 / 396 clean (the chord and hard single
+    notes C2 / C4 / C6 all peak below −1 dBFS) and true to their category. 289 / 289
+    pitched presets are in tune within 12 cents. All sit at −21 dB ±2 momentary loudness,
+    or lower where a hard note's peak held the trim at −3 dBFS (short hits). The closest
+    pair is 2.13 apart.
+  * Each preset stores a measured PATCH LEVEL trim, applied per note, so switching
+    presets never lifts a ringing tail.
+  * The browser searches as you type and shows per-category counts; only visible rows are
+    painted.
+  * Session state restores bit-identically; 66 parameters with stable versioned IDs.
 
 ## UI
 
@@ -230,11 +239,11 @@ re-preparing mid-session. At 96 kHz, 16 voices cost 16.5 / 20.0 %.
 ## TESTING
 
 **Tests actually run** (all on this build):
-* Release suite: **86 tests, 940 checks, 0 failures** (68.2 s), run on the clean rebuild.
-  Groups:
+* Release suite: **90 tests, 1004 checks, 0 failures** (103 s), after the Phase 16
+  preset library. Groups:
   resonator 11, network 11, exciters 6, tuning 8, materials 4, soundcheck 1, voices 10,
-  motion / gesture / chaos / freeze / nonlinear 9, presets / random / state 9,
-  performance 3, realtime 2, host 4, ui 6, smoke / docs 2.
+  motion / gesture / chaos / freeze / nonlinear 10, presets / random / state 9,
+  library 2, performance 3, realtime 2, host 4, ui 7, smoke / docs 2.
 * AddressSanitizer + UndefinedBehaviorSanitizer, final code: the **full suite** (86 tests,
   939 checks, 325 s). **No reports.**
 * ThreadSanitizer, final code: the 12 threaded tests (realtime concurrency, host, node

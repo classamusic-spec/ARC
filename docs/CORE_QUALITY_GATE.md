@@ -1,7 +1,7 @@
 # ARC — Core Quality Gate
 
 Status of every gate at the V1.0 release candidate. Each verdict rests on tests that
-were **run** on this build (`Tests/`, 86 tests / 940 checks, all passing in Release),
+were **run** on this build (`Tests/`, 90 tests / 1004 checks, all passing in Release),
 on sanitizer builds, and on pluginval. Anything that could not be tested in this
 environment is marked **UNVERIFIED — ENVIRONMENT LIMITATION**. Detailed measurements are
 in the linked documents and in `docs/measurements/`.
@@ -124,7 +124,8 @@ was judged from rendered snapshots.
 | Sample-rate changes (22.05 – 192 kHz), block sizes 1 – 4096 | `host` tests: all sound; blocks bit-identical |
 | Multiple instances | `host` tests: isolated (difference 0) |
 | Bypass / suspend | `host` tests; pluginval |
-| Preset switching | switching 94 presets while notes sound: peak −7 dB, no resets |
+| Preset switching | switching 94 presets while notes sound: peak −2.6 dB (the safety clip starts at −3 dBFS), no resets; each note keeps its own patch's level trim (a bell's tail moves −0.7 dB across a switch to a +18 dB patch) |
+| Factory library | 396 presets audited: all clean (chord and hard single notes C2 / C4 / C6 below −1 dBFS), level-calibrated, true to category, 289 / 289 pitched presets in tune, closest pair 2.13 ([PRESETS](PRESETS.md)) |
 | AddressSanitizer + UndefinedBehaviorSanitizer (full suite, 86 tests, final code) | no reports |
 | ThreadSanitizer (12 threaded tests: audio vs message thread, editor at 60 fps, host) | no reports |
 | Allocation detector | 0 allocations on the audio thread |

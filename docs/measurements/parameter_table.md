@@ -65,3 +65,4 @@
 | `arc.fx.width.v1` | Width | 0.00 ... 1.50 | 1.000 | yes |
 | `arc.fx.space.v1` | Space | 0.00 ... 1.00 | 12 % | yes |
 | `arc.fx.drive.v1` | Drive | 0.00 ... 1.00 | 0 % | yes |
+| `arc.fx.level.v1` | Patch Level | -24.00 ... 18.00 dB | 0.00 | yes |

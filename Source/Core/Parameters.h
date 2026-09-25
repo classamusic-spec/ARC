@@ -62,6 +62,8 @@ inline constexpr const char* masterOutput = "arc.master.output.v1";
 inline constexpr const char* width = "arc.fx.width.v1";
 inline constexpr const char* space = "arc.fx.space.v1";
 inline constexpr const char* drive = "arc.fx.drive.v1";
+/** Per-preset loudness trim (dB), applied with the master gain; stored in presets. */
+inline constexpr const char* patchLevel = "arc.fx.level.v1";
 
 /** Per-node parameter id, e.g. nodeId (0, "radius") -> "arc.nodeA.radius.v1". */
 juce::String nodeId (int node, const char* field);
@@ -87,7 +89,7 @@ private:
     std::atomic<float> *pMaterial, *pMass, *pBrightness, *pLoss, *pInharmonicity;
     std::atomic<float> *pFreeze, *pSync, *pMotionDepth, *pMotionRate, *pMotionDivision, *pGesturePlay;
     std::atomic<float> *pPolyphony, *pVoiceMode, *pBendRange, *pRelease, *pGlide, *pMpe, *pQuality;
-    std::atomic<float> *pMaster, *pWidth, *pSpace, *pDrive;
+    std::atomic<float> *pMaster, *pWidth, *pSpace, *pDrive, *pPatchLevel;
     std::array<std::array<std::atomic<float>*, 6>, 4> pNode {};
 };
 

@@ -22,6 +22,8 @@ struct PresetDefinition
     uint32_t seed = 0;       // CHAOS / MOTION random-walk seed (deterministic recall)
     std::vector<std::pair<std::string, float>> values; // parameter id -> plain value
     std::array<std::string, 4> gestures;               // serialised node gestures ("" = none)
+    int foldedTunings = 0;   // design diagnostic: chord tones moved by octaves to fit a node's reach
+    std::string tuningNotes; // ... and where they went ("B 3 -> 1.5")
 };
 
 /** Category display order. */

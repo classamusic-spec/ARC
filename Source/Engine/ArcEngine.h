@@ -81,6 +81,7 @@ private:
     void renderChunk (float* left, float* right, int n) noexcept;
     void publishTelemetry (int n, double seconds) noexcept;
     ArcVoice* findVoiceForNewNote() noexcept;
+    void syncNoteControl() noexcept;
     void startVoice (ArcVoice& v, int channel, int note, float velocity) noexcept;
     uint32_t nextSeed() noexcept;
     bool isMpeMemberChannel (int channel) const noexcept { return params.mpe && channel >= 2 && channel <= 16; }
@@ -100,6 +101,7 @@ private:
     MotionEngine motion;
     ChaosEngine chaos;
     int freezeEpoch = 0;
+    int patchSnapBlocks = 0; // control blocks left in which PATCH LEVEL snaps (after a preset load)
     bool freezeWasOn = false;
     std::array<NodeParams, 4> effectiveNodes {};
     std::array<float, 4> effectiveAngle {};
@@ -125,7 +127,7 @@ private:
     std::array<float, 17> channelTimbre {};
     std::array<bool, 17> sustainDown {};
     float globalBendTarget = 0.0f;
-    dsp::Smoothed bendSmooth, freezeSmooth;
+    dsp::Smoothed bendSmooth, freezeSmooth, patchSmooth;
 
     double sampleRate = 48000.0;
     int controlInterval = 16;

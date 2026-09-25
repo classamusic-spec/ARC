@@ -22,6 +22,7 @@ void ArcEngine::prepare (double newSampleRate, int maxBlockSize)
     output.prepare (sampleRate, maxBlock);
     bendSmooth.coeff = smoothingCoeff (0.004, sampleRate / controlInterval);
     freezeSmooth.coeff = smoothingCoeff (0.12, sampleRate / controlInterval);
+    patchSmooth.coeff = smoothingCoeff (0.02, sampleRate / controlInterval);
     prepared = true;
     reset();
 }
@@ -39,6 +40,9 @@ void ArcEngine::reset()
     globalBendTarget = 0.0f;
     bendSmooth.reset (0.0f);
     freezeSmooth.reset (params.freeze ? 1.0f : 0.0f);
+    patchSmooth.reset (dbToGain (clamp (params.patchLevelDb, -24.0f, 18.0f)));
+    control.patchGain = patchSmooth.next();
+    control.patchEpoch = params.patchEpoch;
     freezeWasOn = params.freeze;
     motion.reset (currentSeed);
     chaos.reset (currentSeed);
@@ -77,6 +81,21 @@ void ArcEngine::setParameters (const EngineParams& p) noexcept
         material.setMaterial (params.material, false);
     if (qualityChanged && prepared)
         applyControlInterval (intervalFor (params.quality, sampleRate));
+    // A preset was loaded: notes from now on belong to the new patch, and its level applies
+    // at once (no fade from the previous patch's trim). The values may land a block after the
+    // epoch (the preset manager advances it first), so the level snaps for a short while.
+    if (params.patchEpoch != control.patchEpoch)
+    {
+        control.patchEpoch = params.patchEpoch;
+        patchSnapBlocks = std::max (1, static_cast<int> (0.03 * sampleRate / std::max (1, controlInterval)));
+        patchSmooth.reset (dbToGain (clamp (params.patchLevelDb, -24.0f, 18.0f)));
+        control.patchGain = patchSmooth.current;
+    }
+    else if (patchSnapBlocks > 0)
+    {
+        patchSmooth.reset (dbToGain (clamp (params.patchLevelDb, -24.0f, 18.0f)));
+        control.patchGain = patchSmooth.current;
+    }
 }
 
 void ArcEngine::applyControlInterval (int n) noexcept
@@ -88,6 +107,7 @@ void ArcEngine::applyControlInterval (int n) noexcept
     material.setUpdateRate (sampleRate / controlInterval);
     bendSmooth.coeff = smoothingCoeff (0.004, sampleRate / controlInterval);
     freezeSmooth.coeff = smoothingCoeff (0.12, sampleRate / controlInterval);
+    patchSmooth.coeff = smoothingCoeff (0.02, sampleRate / controlInterval);
     for (auto& v : voices)
         v.setControlInterval (controlInterval);
 }
@@ -178,6 +198,17 @@ void ArcEngine::updateGlobalControl() noexcept
     control.freezeEpoch = freezeEpoch;
     freezeSmooth.setTarget (params.freeze ? 1.0f : 0.0f);
     control.freeze = freezeSmooth.next();
+    // PATCH LEVEL is applied per voice (each note keeps the trim of its own patch); smoothed
+    // for automation, snapped just after a preset load (see setParameters).
+    const float patchTarget = dbToGain (clamp (params.patchLevelDb, -24.0f, 18.0f));
+    if (patchSnapBlocks > 0)
+    {
+        --patchSnapBlocks;
+        patchSmooth.reset (patchTarget);
+    }
+    patchSmooth.setTarget (patchTarget);
+    control.patchGain = patchSmooth.next();
+    control.patchEpoch = params.patchEpoch;
 }
 
 // -------------------------------------------------------------------------------------
@@ -252,6 +283,18 @@ ArcVoice* ArcEngine::findVoiceForNewNote() noexcept
     return quietest;
 }
 
+void ArcEngine::syncNoteControl() noexcept
+{
+    // A note takes its exciter from the parameters as they are now. `control` is refreshed
+    // at control boundaries, so a note in the same block as a preset change would otherwise
+    // start with the previous patch's exciter (and, since PATCH LEVEL is per note, the new
+    // patch's trim): found by the per-note trim test. Plain copies, no time advances.
+    control.exciterType = params.exciter;
+    control.exciter = params.exciterParams;
+    control.excite = params.excite;
+    control.releaseDamping = params.releaseDamping;
+}
+
 void ArcEngine::startVoice (ArcVoice& v, int channel, int note, float velocity) noexcept
 {
     v.start (note, channel, velocity, nextSeed(), control);
@@ -276,6 +319,7 @@ void ArcEngine::noteOn (int channel, int note, float velocity) noexcept
     }
     channel = std::clamp (channel, 1, 16);
     velocity = std::clamp (velocity, 0.0f, 1.0f);
+    syncNoteControl();
     const bool transient = params.exciter == ExciterType::strike || params.exciter == ExciterType::pluck;
     if (transient)
     {
@@ -339,6 +383,7 @@ void ArcEngine::noteOff (int channel, int note) noexcept
             if (numHeld > 0)
             {
                 // Return to the most recent still-held note.
+                syncNoteControl();
                 const auto& h = held[static_cast<size_t> (numHeld - 1)];
                 const bool transient = params.exciter == ExciterType::strike || params.exciter == ExciterType::pluck;
                 v.glideTo (h.note, h.velocity, params.voiceMode == VoiceMode::legato ? params.glideSeconds : 0.0f,
@@ -496,7 +541,7 @@ void ArcEngine::renderChunk (float* left, float* right, int n) noexcept
         controlCountdown -= len;
         done += len;
     }
-    output.setParameters (params.width, params.space, params.drive, params.masterGainDb);
+    output.setParameters (params.width, params.space, params.drive, params.masterGainDb, control.patchGain);
     if (! output.process (left, right, n))
         Telemetry::store (telemetry.nonFiniteEvents, Telemetry::load (telemetry.nonFiniteEvents) + 1u);
 }

@@ -56,6 +56,8 @@ void ArcVoice::reset() noexcept
     state = State::idle;
     gain = 1.0f;
     gainStep = 0.0f;
+    patchGain = 1.0f;
+    patchGainStep = 0.0f;
     level = levelAcc = 0.0f;
     levelCount = 0;
     nodeEnergy.fill (0.0f);
@@ -95,6 +97,7 @@ void ArcVoice::start (int newNote, int newChannel, float newVelocity, uint32_t s
     state = State::active;
     gain = 1.0f;
     gainStep = 0.0f;
+    takePatchTrim (ctl);
     releaseT60Mult = 1.0f;
     sustainedByPedal = false;
     nonFiniteDetected = false;
@@ -153,6 +156,7 @@ void ArcVoice::restrike (float newVelocity, uint32_t seed, const VoiceControl& c
     state = State::active;
     gain = 1.0f;
     gainStep = 0.0f;
+    takePatchTrim (ctl); // a note played now belongs to the current patch
     sustainedByPedal = false;
     silentBlocks = 0;
     silentSamples = 0;
@@ -171,6 +175,7 @@ void ArcVoice::glideTo (int newNote, float newVelocity, float glideSeconds, bool
     state = State::active;
     gain = 1.0f;
     gainStep = 0.0f;
+    takePatchTrim (ctl);
     sustainedByPedal = false;
     silentBlocks = 0;
     silentSamples = 0;
@@ -412,6 +417,18 @@ void ArcVoice::updateControl (const VoiceControl& ctl, bool immediate) noexcept
 
     if (! immediate)
         exciter.update (ctl.exciter, velocity, ctl.excite, pressure, static_cast<float> (sampleRate / coreFrequency));
+
+    // PATCH LEVEL: a note keeps the trim of the patch it was played in. After a preset change
+    // its tail holds that trim (a quiet patch's +18 dB must not lift the ringing tail of a
+    // loud one); notes of the current patch follow the parameter, ramped over the block.
+    const float patchTarget = patchEpochAtStart == ctl.patchEpoch ? ctl.patchGain : patchGain;
+    if (immediate)
+    {
+        patchGain = patchTarget;
+        patchGainStep = 0.0f;
+    }
+    else
+        patchGainStep = (patchTarget - patchGain) / static_cast<float> (std::max (1, controlInterval));
 }
 
 void ArcVoice::trackIntonation (float coreSample) noexcept
@@ -498,9 +515,10 @@ void ArcVoice::renderSpan (float* outL, float* outR, int n) noexcept
             trackIntonation (y[kCore]);
         float l, r;
         network.pickup (y, l, r);
-        const float g = gain * norm;
+        const float g = gain * norm * patchGain;
         l *= g;
         r *= g;
+        patchGain += patchGainStep;
         if (gainStep != 0.0f)
             gain = std::max (0.0f, gain + gainStep);
         outL[s] += l;

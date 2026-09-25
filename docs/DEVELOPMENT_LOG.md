@@ -359,3 +359,111 @@ following the locked reference (UI_SYSTEM.md).
   * Clean rebuild from an empty build directory: 4 min 18 s, 0 warnings.
   * pluginval strictness 10 with GUI: SUCCESS; VST3 validator: 47 / 47 and 537 / 537.
   * Sanitizer runs on the final code: see the release report.
+
+## Phase 16 — The preset library: 350 new presets (quality gate: PASS)
+
+Request: build 350 unique, creative presets. The library is now **396 presets**: the 46
+signature sounds and 350 new ones.
+
+| Category | New | Total | Category | New | Total |
+|---|---|---|---|---|---|
+| PADS | 32 | 36 | METAL | 28 | 32 |
+| PLUCKED | 32 | 36 | WOOD | 28 | 32 |
+| STRUCK | 32 | 36 | MEMBRANE | 28 | 32 |
+| BOWED | 30 | 34 | DRONES | 26 | 29 |
+| AIR | 30 | 34 | PERCUSSION | 30 | 34 |
+| GLASS | 28 | 31 | EXPERIMENTAL | 26 | 30 |
+
+Every preset is a designed instrument with a name, tags and a one-line description, and
+each uses the network deliberately:
+* tunings: harmonic, just, pelog, whole tone, quarter tone, golden ratio, pi and e,
+  square roots, and formants;
+* topologies, per-node levels, links and stereo angles;
+* motion, including synced;
+* procedural gestures;
+* voice modes and FX.
+
+The catalogue [PRESETS](PRESETS.md) is generated from the library and its measurements.
+
+**Infrastructure**
+* A fluent builder (`Source/Core/PresetBuilder.h`) with one file per category
+  (`Source/Core/Presets/`).
+  * `tune()` places a node exactly on a ratio for the material, TENSION and
+    INHARMONICITY set so far.
+  * `chord()` / `tuneNear()` fold an out-of-reach ratio by octaves and record each fold
+    as a diagnostic.
+  * Seeds come from the preset name.
+* Four new procedural gestures:
+  * figure: a Lissajous path;
+  * breathe: the node's tuning swells and returns;
+  * steps: a tuning sequence, semitone-exact with QUANTIZE;
+  * wander: a seeded smooth loop.
+
+  They are tested as closed, bounded and exact.
+* **PATCH LEVEL** (`arc.fx.level.v1`, −24 … +18 dB, the 66th parameter): each preset's
+  measured loudness trim, generated into `Calibration.inc` by
+  `library/calibrate loudness`. The CORE inspector shows it as LEVEL.
+
+**The library audit** (`library/every preset is clean, truthful and unique`, TESTING) renders
+every preset and fails on:
+* anything unclean;
+* a level off target;
+* a category it does not live up to;
+* a pitched preset out of tune;
+* two presets closer than 2.0 in a fingerprint distance.
+
+Final: 396 / 396 clean, on level, true to their category, and 289 / 289 pitched presets
+in tune. The closest pair is 2.13 (Reed Array / Sheng Cluster).
+
+**What the audit found (all fixed)**
+* **Obsidian Bloom, the signature preset, played 66–81 cents sharp.** Its node A sat at
+  1.036 × CORE, and a bowed CORE locks onto one side of a near-unison doublet. The node
+  moved to 1.11 × and the preset is now within 1 cent. Rule: sustained exciters keep
+  every node at least 5 % from unison.
+* **Motor Vibes asked for ratios outside its nodes' reach.** The radius clamped and the
+  1 : 4 overtone sounded 30 cents flat. TENSION was raised. The library test now names
+  any clamped tuning.
+* **A light skin under a strong breath reads sharp.** The membrane's amplitude-driven
+  tension never settles under a sustained drive: Mirliton read +12 cents at MASS 0.46
+  and +1.6 at 0.62. Breathy membrane pads with a weaker drive stay within 4 cents.
+* **MASTER and PATCH LEVEL were clamped together at +6 dB,** so quiet presets got at
+  most 9 dB of an 18 dB trim.
+* **Replacing that with a global trim made preset switching loud.** A quiet patch's
+  +18 dB also lifted the previous patch's ringing tail. The switching test's peak rose
+  from −7 dB to the safety clip's ceiling (−0.008 dB).
+
+  PATCH LEVEL is now applied **per note**. A preset load advances a patch epoch *before*
+  its values arrive; notes keep the trim of the patch they were played in, and notes of
+  the current patch follow automation. A new test measures a bell's tail across a
+  switch to a +18 dB patch at −0.7 dB. A note played in the same block as a switch
+  lands within 1.5 dB of a fresh one.
+* **Two calibration flaws.**
+  * Calibration measured through the safety clip, which hides true peaks. It now
+    measures 12 dB lower (MASTER is after DRIVE, so this is exact) and adds the 12 dB
+    back.
+  * The C3-E3-G3 chord does not find the loudest attack of a short hit. At trim 0,
+    Closed Hat's hard C6 peaked at +9.9 dBFS before the clip.
+
+  Calibration and the audit now also play hard single notes (C2, C4, C6 at full
+  velocity). The trim is capped so that none of them passes −3 dBFS, where the safety
+  clip begins. Short hits are therefore quieter on the chord (39 below −23 dB; the
+  audit allows this only when the peak ceiling held them back). The switching test
+  (94 presets in 12 s, each loaded while notes of the last one ring) went from the clip
+  ceiling to −4.2 dB, and to −2.6 dB once same-block notes got their own exciter (below).
+* **A per-note trim runs before DRIVE, so it would have changed a patch's
+  saturation.** The drive now sees the signal with the current patch's trim taken out,
+  and the trim is put back afterwards: the same colour as before.
+* **A note in the same block as a preset change started with the previous patch's
+  exciter.** This bug predates the library. `control` is refreshed at control
+  boundaries, while the voice picks its exciter at note-on: a breath patch played right
+  after a bell was struck. The note-defining fields are now copied from the parameters
+  at note-on, as plain copies, so block-size bit-identity holds.
+
+**Browser for 396 presets**
+* Type-to-search: every word must match the name, tags, description or category.
+* Per-category counts; categories with no match fade back.
+* Arrow keys work from the search field.
+* Clip-aware row painting: 10 rows drawn of 396, the whole sheet in about 4 ms.
+* A 680 × 500 sheet. At 620 × 450 the category rail's last entry was clipped once there
+  were 12 categories.
+

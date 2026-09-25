@@ -1,142 +1,43 @@
 #include "Core/FactoryPresets.h"
 
 #include <algorithm>
-#include <cmath>
 
-#include "Core/Parameters.h"
-#include "Engine/NetworkGeometry.h"
-#include "Motion/Gesture.h"
+#include "Core/PresetBuilder.h"
 
 namespace arc::presets
 {
 
 namespace
 {
-using dsp::Topology;
+using namespace detail;
 
-enum Division
+// Measured loudness trims (Tests/LibraryTests.cpp, "calibrate loudness"): every preset's test
+// chord lands on the same loudness, so browsing never jumps in level.
+struct Trim
 {
-    quarter = 0,
-    half,
-    bar1,
-    bar2,
-    bar4,
-    bar8
+    const char* name;
+    float dB;
+};
+constexpr Trim kCalibration[] = {
+#include "Presets/Calibration.inc"
+    { nullptr, 0.0f }
 };
 
-/** Fluent preset description. Values are plain (denormalised) parameter values. */
-class Builder
+void applyCalibration (std::vector<PresetDefinition>& presets)
 {
-public:
-    Builder (const char* name, const char* category, const char* tags, const char* description, uint32_t seed)
-    {
-        p.name = name;
-        p.category = category;
-        p.tags = tags;
-        p.description = description;
-        p.seed = seed;
-    }
-
-    Builder& set (const std::string& id, float v)
-    {
-        for (auto& kv : p.values)
-            if (kv.first == id)
+    for (auto& p : presets)
+        for (const auto& t : kCalibration)
+            if (t.name != nullptr && p.name == t.name)
             {
-                kv.second = v;
-                return *this;
+                bool found = false;
+                for (auto& kv : p.values)
+                    if (kv.first == params::patchLevel)
+                        kv.second = t.dB, found = true;
+                if (! found)
+                    p.values.emplace_back (params::patchLevel, t.dB);
+                break;
             }
-        p.values.emplace_back (id, v);
-        return *this;
-    }
-
-    Builder& strike (float hardness, float length, float tone)
-    {
-        return exciter (ExciterType::strike).set (params::strikeHardness, hardness).set (params::strikeLength, length).set (params::strikeTone, tone);
-    }
-    Builder& pluck (float position, float damp, float tone)
-    {
-        return exciter (ExciterType::pluck).set (params::pluckPosition, position).set (params::pluckDamp, damp).set (params::pluckTone, tone);
-    }
-    Builder& bow (float pressure, float speed, float friction)
-    {
-        return exciter (ExciterType::bow).set (params::bowPressure, pressure).set (params::bowSpeed, speed).set (params::bowFriction, friction);
-    }
-    Builder& air (float flow, float turbulence, float tone)
-    {
-        return exciter (ExciterType::air).set (params::airFlow, flow).set (params::airTurbulence, turbulence).set (params::airTone, tone);
-    }
-
-    Builder& material (MaterialType m, float mass, float brightness, float loss, float inharmonicity = 0.5f)
-    {
-        mat = m;
-        inharm = inharmonicity;
-        return set (params::materialType, static_cast<float> (m))
-            .set (params::mass, mass)
-            .set (params::brightness, brightness)
-            .set (params::loss, loss)
-            .set (params::inharmonicity, inharmonicity);
-    }
-
-    Builder& macros (float excite, float coupling, float tension, float chaos)
-    {
-        tens = tension;
-        return set (params::excite, excite).set (params::coupling, coupling).set (params::tension, tension).set (params::chaos, chaos);
-    }
-
-    Builder& topology (Topology t) { return set (params::topology, static_cast<float> (t)); }
-    Builder& quantise() { return set (params::quantise, 1.0f); }
-
-    /** Node field for A..D ("radius", "angle", "decay", "damp", "level", "link"). */
-    Builder& nodes (const char* field, float a, float b, float c, float d)
-    {
-        const float v[4] = { a, b, c, d };
-        for (int n = 0; n < 4; ++n)
-            set (params::nodeId (n, field).toStdString(), v[n]);
-        return *this;
-    }
-
-    /** Places node n exactly on `ratio` x CORE for the material / TENSION / INHARMONICITY
-        set so far (radius is the only per-node tuning control). */
-    Builder& tune (int n, float ratio)
-    {
-        const float radius = radiusForRatio (mat, n, ratio, tens, inharm);
-        return set (params::nodeId (n, "radius").toStdString(), std::clamp (radius, 0.0f, 1.0f));
-    }
-
-    Builder& motion (float depth, float rateHz) { return set (params::motionDepth, depth).set (params::motionRate, rateHz); }
-    Builder& synced (Division division, float depth)
-    {
-        return set (params::sync, 1.0f).set (params::motionDivision, static_cast<float> (division)).set (params::motionDepth, depth);
-    }
-    Builder& gesture (int n, const Gesture& g)
-    {
-        p.gestures[static_cast<size_t> (n)] = g.serialise();
-        return *this;
-    }
-    Builder& voice (VoiceMode mode, float glideSeconds)
-    {
-        return set (params::voiceMode, static_cast<float> (mode)).set (params::glide, glideSeconds);
-    }
-    Builder& release (float damping) { return set (params::releaseDamping, damping); }
-    Builder& fx (float width, float space, float drive = 0.0f)
-    {
-        return set (params::width, width).set (params::space, space).set (params::drive, drive);
-    }
-
-    PresetDefinition build() const { return p; }
-
-private:
-    Builder& exciter (ExciterType t) { return set (params::exciterType, static_cast<float> (t)); }
-
-    PresetDefinition p;
-    MaterialType mat = MaterialType::metal;
-    float tens = 0.5f, inharm = 0.5f;
-};
-
-constexpr auto glass = MaterialType::glass;
-constexpr auto metal = MaterialType::metal;
-constexpr auto wood = MaterialType::wood;
-constexpr auto membrane = MaterialType::membrane;
+}
 
 std::vector<PresetDefinition> build()
 {
@@ -150,7 +51,9 @@ std::vector<PresetDefinition> build()
              .material (metal, 0.62f, 0.34f, 0.32f, 0.55f)
              .macros (0.58f, 0.685f, 0.44f, 0.16f)
              .topology (Topology::web)
-             .nodes ("radius", 0.40f, 0.57f, 0.33f, 0.66f)
+             // Node A at 1.11 x (not 1.04): a bowed CORE locks onto one side of a
+             // near-unison doublet, which played this preset 70 cents sharp.
+             .nodes ("radius", 0.45f, 0.57f, 0.33f, 0.66f)
              .nodes ("decay", 0.62f, 0.62f, 0.58f, 0.58f)
              .nodes ("damp", 0.58f, 0.58f, 0.62f, 0.62f)
              .nodes ("level", 0.72f, 0.70f, 0.66f, 0.66f)
@@ -567,7 +470,24 @@ std::vector<PresetDefinition> build()
              .motion (0.50f, 0.80f)
              .fx (1.2f, 0.24f, 0.24f));
 
-    // Display order = category order.
+    // The library: every category's full collection (the signature presets above open
+    // each category).
+    addPads (v);
+    addPlucked (v);
+    addStruck (v);
+    addBowed (v);
+    addAir (v);
+    addGlass (v);
+    addMetal (v);
+    addWood (v);
+    addMembrane (v);
+    addDrones (v);
+    addPercussion (v);
+    addExperimental (v);
+
+    applyCalibration (v);
+
+    // Display order = category order (stable: signature presets first).
     const auto& order = categories();
     std::stable_sort (v.begin(), v.end(), [&order] (const PresetDefinition& a, const PresetDefinition& b)
                       {

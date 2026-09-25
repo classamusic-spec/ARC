@@ -3,6 +3,7 @@
 #include "Analysis.h"
 #include "ArcTest.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <set>
@@ -137,17 +138,24 @@ TEST_CASE ("presets", "factory library is complete and valid")
     ArcAudioProcessor proc;
     const auto& list = arc::presets::factoryPresets();
     MEASURE ("factoryPresets", static_cast<double> (list.size()));
-    CHECK (list.size() >= 40);
+    CHECK (list.size() >= 396); // the 46 signature sounds + the 350-preset library
 
     std::map<std::string, int> perCategory;
-    std::set<std::string> names;
-    int badIds = 0, outOfRange = 0, badGestures = 0, clampedTunings = 0, noDescription = 0;
+    std::set<std::string> names, descriptions;
+    int badIds = 0, outOfRange = 0, badGestures = 0, clampedTunings = 0, noDescription = 0, uncalibrated = 0;
     for (const auto& p : list)
     {
         names.insert (p.name);
+        descriptions.insert (p.description);
         ++perCategory[p.category];
         if (p.description.empty() || p.tags.empty())
             ++noDescription;
+        // Every preset carries its measured loudness trim (Source/Core/Presets/Calibration.inc).
+        if (std::none_of (p.values.begin(), p.values.end(), [] (const auto& kv) { return kv.first == arc::params::patchLevel; }))
+        {
+            ++uncalibrated;
+            std::printf ("    not calibrated: %s\n", p.name.c_str());
+        }
         for (const auto& [id, value] : p.values)
         {
             auto* param = proc.getValueTreeState().getParameter (id);
@@ -162,7 +170,10 @@ TEST_CASE ("presets", "factory library is complete and valid")
                 ++outOfRange;
             // Tuned nodes must be reachable without clamping.
             if (juce::String (id).contains (".radius.") && (value <= 0.0f || value >= 1.0f))
+            {
                 ++clampedTunings;
+                std::printf ("    clamped tuning in %s: %s = %.3f\n", p.name.c_str(), id.c_str(), static_cast<double> (value));
+            }
         }
         for (const auto& g : p.gestures)
             if (! g.empty() && ! arc::Gesture::deserialise (g).valid)
@@ -171,10 +182,11 @@ TEST_CASE ("presets", "factory library is complete and valid")
     for (const auto& c : arc::presets::categories())
     {
         MEASURE ("category." + c, perCategory[c]);
-        CHECK (perCategory[c] >= 3);
+        CHECK (perCategory[c] >= 29);
     }
     CHECK (perCategory.size() == arc::presets::categories().size());
-    CHECK (names.size() == list.size()); // unique names
+    CHECK (names.size() == list.size());        // unique names
+    CHECK (descriptions.size() == list.size()); // and no copied descriptions
 
     // Every example name from the product specification.
     int missing = 0;
@@ -193,7 +205,9 @@ TEST_CASE ("presets", "factory library is complete and valid")
     MEASURE ("outOfRange", outOfRange);
     MEASURE ("badGestures", badGestures);
     MEASURE ("clampedTunings", clampedTunings);
+    MEASURE ("uncalibrated", uncalibrated);
     CHECK (missing == 0);
+    CHECK (uncalibrated == 0);
     CHECK (badIds == 0);
     CHECK (outOfRange == 0);
     CHECK (badGestures == 0);
@@ -201,88 +215,6 @@ TEST_CASE ("presets", "factory library is complete and valid")
     CHECK (noDescription == 0);
     CHECK (proc.getNumPrograms() == static_cast<int> (list.size()));
     CHECK (proc.getPresetManager().getCurrentName() == "Obsidian Bloom"); // opens on the signature sound
-}
-
-// -------------------------------------------------------------------------------------
-TEST_CASE ("presets", "every factory preset renders cleanly")
-{
-    const auto& list = arc::presets::factoryPresets();
-    std::filesystem::create_directories (outputDir() + "/presets");
-    std::filesystem::create_directories (std::string (ARC_SOURCE_DIR) + "/docs/measurements/phase9");
-    std::ofstream csv (std::string (ARC_SOURCE_DIR) + "/docs/measurements/phase9/factory_presets.csv");
-    csv << "name,category,momentary_db,peak_db,tail_db,centroid_hz,dc\n";
-
-    double loudest = -200, quietest = 200;
-    std::string loudestName, quietestName;
-    int nonFinite = 0, clipped = 0, silent = 0, dcOffsets = 0;
-    std::vector<std::vector<double>> shapes;
-    for (size_t i = 0; i < list.size(); ++i)
-    {
-        ArcAudioProcessor proc;
-        proc.getPresetManager().loadPreset (static_cast<int> (i));
-        proc.prepareToPlay (kSr, kBlock);
-        const auto out = render (proc, 4.0, chord (2.0));
-
-        const double level = momentaryDb (out.mono, 0.0, 2.0);
-        const double peak = db (std::max (peakAbs (out.left), peakAbs (out.right)));
-        const double tail = db (rms (out.mono, static_cast<int> (3.5 * kSr), static_cast<int> (0.4 * kSr)));
-        const double centroid = spectralCentroid (out.mono, kSr, static_cast<int> (0.1 * kSr), static_cast<int> (1.8 * kSr));
-        double mean = 0;
-        for (int s = static_cast<int> (0.1 * kSr); s < static_cast<int> (1.9 * kSr); ++s)
-            mean += out.mono[static_cast<size_t> (s)];
-        mean /= 1.8 * kSr;
-        const double dcDb = db (std::abs (mean)) - db (rms (out.mono, static_cast<int> (0.1 * kSr), static_cast<int> (1.8 * kSr)));
-
-        const auto& name = list[i].name;
-        csv << name << "," << list[i].category << "," << level << "," << peak << "," << tail << "," << centroid << ","
-            << dcDb << "\n";
-        std::printf ("    %-20s %-13s loud %6.1f dB  peak %6.1f dB  tail %6.1f dB  centroid %6.0f Hz\n", name.c_str(),
-                     list[i].category.c_str(), level, peak, tail, centroid);
-        writeWav (outputDir() + "/presets/" + juce::File::createLegalFileName (name).toStdString() + ".wav", out.left,
-                  out.right, kSr);
-
-        if (! allFinite (out.left) || ! allFinite (out.right))
-            ++nonFinite;
-        if (peak > -0.1)
-            ++clipped;
-        if (level < -45.0)
-            ++silent;
-        if (dcDb > -30.0)
-            ++dcOffsets;
-        if (level > loudest)
-            loudest = level, loudestName = name;
-        if (level < quietest)
-            quietest = level, quietestName = name;
-        shapes.push_back (bandsDb (out.mono));
-    }
-    std::printf ("    loudest: %s (%.1f dB), quietest: %s (%.1f dB)\n", loudestName.c_str(), loudest, quietestName.c_str(),
-                 quietest);
-    MEASURE ("loudest_db", loudest);
-    MEASURE ("quietest_db", quietest);
-    MEASURE ("loudnessSpread_db", loudest - quietest);
-    MEASURE ("nonFinite", nonFinite);
-    MEASURE ("clipped", clipped);
-    MEASURE ("silent", silent);
-    MEASURE ("dcOffsets", dcOffsets);
-    CHECK (nonFinite == 0);
-    CHECK (clipped == 0);
-    CHECK (silent == 0);
-    CHECK (dcOffsets == 0);
-    CHECK (loudest - quietest < 12.0);
-
-    // Distinctness: no two presets share a spectral shape.
-    double closest = 1e9;
-    std::string pair;
-    for (size_t a = 0; a < shapes.size(); ++a)
-        for (size_t b = a + 1; b < shapes.size(); ++b)
-        {
-            const double d = lsd (shapes[a], shapes[b]);
-            if (d < closest)
-                closest = d, pair = list[a].name + " / " + list[b].name;
-        }
-    std::printf ("    closest pair: %s (%.2f dB)\n", pair.c_str(), closest);
-    MEASURE ("closestPairLsd_db", closest);
-    CHECK (closest > 1.0);
 }
 
 // -------------------------------------------------------------------------------------
@@ -648,3 +580,63 @@ TEST_CASE ("state", "automating every parameter is safe and smooth")
     CHECK (worstPeak < 1.0);
     CHECK (worstStepRatio < 6.0);
 }
+
+
+// -------------------------------------------------------------------------------------
+TEST_CASE ("presets", "a preset's level trim applies to its own notes only")
+{
+    // PATCH LEVEL is per note: switching from a loud patch (Black Bell, +1.4 dB) to a quiet one
+    // (Condensation, +18 dB) must not lift the bell's ringing tail by the difference, and a
+    // note played in the same block as the switch must get the new patch's trim at once.
+    auto rms = [] (const Signal& s, double from, double len)
+    {
+        double acc = 0;
+        const int a = static_cast<int> (from * kSr), n = static_cast<int> (len * kSr);
+        for (int i = a; i < a + n; ++i)
+            acc += static_cast<double> (s[static_cast<size_t> (i)]) * s[static_cast<size_t> (i)];
+        return std::sqrt (acc / n);
+    };
+    ArcAudioProcessor p;
+    auto& pm = p.getPresetManager();
+    p.prepareToPlay (kSr, kBlock);
+    pm.loadPreset (pm.findPreset ("factory/Black Bell"));
+    const auto bell = render (p, 0.6, [] (juce::MidiBuffer& m, double t)
+                              {
+                                  if (t == 0.0)
+                                      m.addEvent (juce::MidiMessage::noteOn (1, 48, 0.9f), 0);
+                                  if (t > 0.3 && t < 0.3 + kBlock / kSr)
+                                      m.addEvent (juce::MidiMessage::noteOff (1, 48), 0);
+                              });
+    const double before = rms (bell.mono, 0.5, 0.1);
+    pm.loadPreset (pm.findPreset ("factory/Condensation"));
+    const auto tail = render (p, 0.3, [] (juce::MidiBuffer&, double) {});
+    const double after = rms (tail.mono, 0.0, 0.1);
+    const double jumpDb = 20.0 * std::log10 ((after + 1e-12) / (before + 1e-12));
+    MEASURE ("tailJumpAfterSwitch_dB", jumpDb);
+    CHECK (jumpDb < 6.0); // the trims differ by 16.6 dB
+
+    // A note in the same block as the switch plays at the new patch's level (Glass Organ,
+    // -3.1 dB, to Condensation: the same exciter and material, so nothing morphs).
+    auto playAfterSwitch = [&] (bool switchFirst)
+    {
+        ArcAudioProcessor q;
+        auto& qm = q.getPresetManager();
+        q.prepareToPlay (kSr, kBlock);
+        qm.loadPreset (qm.findPreset (switchFirst ? "factory/Glass Organ" : "factory/Condensation"));
+        render (q, 0.05, [] (juce::MidiBuffer&, double) {});
+        return render (q, 1.2, [&] (juce::MidiBuffer& m, double t)
+                       {
+                           if (t == 0.0)
+                           {
+                               if (switchFirst)
+                                   qm.loadPreset (qm.findPreset ("factory/Condensation"));
+                               m.addEvent (juce::MidiMessage::noteOn (1, 60, 0.8f), 0);
+                           }
+                       });
+    };
+    const auto switched = playAfterSwitch (true), fresh = playAfterSwitch (false);
+    const double diffDb = 20.0 * std::log10 (rms (switched.mono, 0.4, 0.8) / rms (fresh.mono, 0.4, 0.8));
+    MEASURE ("newNoteLevelVsFresh_dB", diffDb);
+    CHECK (std::abs (diffDb) < 2.0);
+}
+

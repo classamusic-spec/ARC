@@ -36,6 +36,8 @@ struct VoiceControl
     float freeze = 0.0f;                             // 0..1 (smoothed)
     int freezeEpoch = 0;                             // voices started before the epoch freeze
     float releaseDamping = 0.25f;                    // 0 = ring freely after note-off, 1 = damp fast
+    float patchGain = 1.0f;                          // PATCH LEVEL, linear (smoothed)
+    uint32_t patchEpoch = 0;                         // advances on every preset load
     int dispersionStages = 4;
     bool couplingCompensation = true;
 };

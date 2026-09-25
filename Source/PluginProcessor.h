@@ -49,6 +49,9 @@ public:
     void setGesture (int node, const arc::Gesture& g);
     arc::Gesture getGesture (int node) const;
     void setSeed (uint32_t seed);
+    /** Called by the preset manager before it applies a preset: notes already sounding keep
+        the PATCH LEVEL of the patch they were played in. */
+    void beginPatchChange() noexcept { patchEpoch.fetch_add (1); }
     uint32_t getSeed() const noexcept { return seed.load (std::memory_order_relaxed); }
 
     static constexpr int stateVersion = 1;
@@ -75,6 +78,7 @@ private:
     std::array<std::atomic<uint32_t>, 4> gestureSerial {};
     std::array<uint32_t, 4> appliedGestureSerial {};
     std::atomic<uint32_t> seed { 0xA2C1u };
+    std::atomic<uint32_t> patchEpoch { 0 }; // advanced before a preset's values are applied
     std::atomic<int> editorWidth { 1080 };
 
     std::unique_ptr<arc::PresetManager> presets;

@@ -130,6 +130,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     layout.add (std::make_unique<APF> (pid (width), "Width", Range (0.0f, 1.5f, 0.001f), 1.0f));
     layout.add (unit (space, "Space", 0.12f));
     layout.add (unit (drive, "Drive", 0.0f));
+    layout.add (std::make_unique<APF> (pid (patchLevel), "Patch Level", Range (-24.0f, 18.0f, 0.01f), 0.0f,
+                                       juce::AudioParameterFloatAttributes().withLabel ("dB")));
     return layout;
 }
 
@@ -183,6 +185,7 @@ ParameterCache::ParameterCache (juce::AudioProcessorValueTreeState& s)
     pWidth = get (s, width);
     pSpace = get (s, space);
     pDrive = get (s, drive);
+    pPatchLevel = get (s, patchLevel);
     for (int n = 0; n < 4; ++n)
         for (int f = 0; f < 6; ++f)
             pNode[static_cast<size_t> (n)][static_cast<size_t> (f)] = get (s, nodeId (n, nodeFields[f]));
@@ -244,6 +247,7 @@ void ParameterCache::fill (EngineParams& p) const noexcept
     p.width = v (pWidth);
     p.space = v (pSpace);
     p.drive = v (pDrive);
+    p.patchLevelDb = v (pPatchLevel);
 }
 
 } // namespace arc::params

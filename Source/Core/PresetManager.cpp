@@ -129,6 +129,7 @@ float PresetManager::plainValueFor (const Preset& p, juce::RangedAudioParameter&
 
 void PresetManager::applyPreset (const Preset& preset)
 {
+    processor.beginPatchChange(); // before the values: sounding notes keep their patch's level
     for (auto* param : presetParams)
         param->setValueNotifyingHost (param->convertTo0to1 (plainValueFor (preset, *param)));
     for (int n = 0; n < 4; ++n)

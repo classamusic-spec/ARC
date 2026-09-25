@@ -184,8 +184,11 @@ CoreInspector::CoreInspector (ArcAudioProcessor& p) : GlassCard ("Network")
     drive.attach (state, params::drive);
     drive.setValueFormatter (percent);
     drive.setHelp ("DRIVE", "Soft output saturation.");
+    level.attach (state, params::patchLevel);
+    level.setValueFormatter ([] (double v) { return (v > 0.0 ? "+" : "") + juce::String (v, 1) + " dB"; });
+    level.setHelp ("LEVEL", "This patch's loudness trim (stored with the preset; MASTER sets your monitoring level).");
     quantise.onStateChange = [this] { refresh(); };
-    for (auto* c : std::initializer_list<juce::Component*> { &topology, &quantise, &space, &width, &drive })
+    for (auto* c : std::initializer_list<juce::Component*> { &topology, &quantise, &space, &width, &drive, &level })
         addAndMakeVisible (*c);
     refresh();
 }
@@ -204,11 +207,12 @@ void CoreInspector::resized()
     auto left = r.removeFromLeft (104);
     r.removeFromRight (22);
     quantise.setBounds (left.removeFromBottom (22).withWidth (92));
-    auto knobsArea = r.removeFromRight (r.getWidth() * 45 / 100);
-    const int kw = knobsArea.getWidth() / 3;
+    auto knobsArea = r.removeFromRight (r.getWidth() * 56 / 100);
+    const int kw = knobsArea.getWidth() / 4;
     space.setBounds (knobsArea.removeFromLeft (kw));
     width.setBounds (knobsArea.removeFromLeft (kw));
-    drive.setBounds (knobsArea);
+    drive.setBounds (knobsArea.removeFromLeft (kw));
+    level.setBounds (knobsArea);
     topology.setBounds (r.reduced (6, 0).withSizeKeepingCentre (r.getWidth() - 12, 24));
 }
 

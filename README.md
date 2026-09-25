@@ -18,7 +18,8 @@ of the instrument, where you can see it, touch it, retune it and make it move.
 * **Network:** energy-preserving orthogonal scattering, stable at any coupling, with
   per-node coupling compensation so coupled networks stay in tune.
 * **Playing:** 16 voices (default 8), poly / mono / legato, MPE, sustain, aftertouch.
-  46 factory presets in 12 categories. Full session recall.
+  396 factory presets in 12 categories, every one measured for level, tuning, category
+  and uniqueness ([PRESETS](docs/PRESETS.md)); type-to-search browser. Full session recall.
 * **Formats:** VST3 and Standalone (AU on macOS). C++20, JUCE 8.
 
 ## Build
@@ -55,8 +56,9 @@ CMake options:
 ## Test and validate
 
 ```bash
-./build/ARCTests_artefacts/Release/ARCTests            # 86 tests: DSP, network, exciters, materials,
-                                                       # voices, motion, presets, state, realtime, host
+./build/ARCTests_artefacts/Release/ARCTests            # 90 tests: DSP, network, exciters, materials,
+                                                       # voices, motion, presets, the 396-preset library
+                                                       # audit, state, realtime, host
 xvfb-run -a ./build/ARCTests_artefacts/Release/ARCTests ui   # editor tests on a headless Linux machine
 pluginval --strictness-level 10 --validate-in-process build/ARC_artefacts/Release/VST3/ARC.vst3
 ```

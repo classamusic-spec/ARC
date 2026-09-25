@@ -50,6 +50,20 @@ Gesture buildGesture (const std::vector<GestureSample>& raw, double beatsPerSeco
 Gesture orbitGesture (float seconds, float beats, float turns, float radiusWobble);
 Gesture swayGesture (float seconds, float beats, float angleSwing, float radiusSwing);
 
+/** figure: a Lissajous path, `a` angle and `b` radius oscillations per cycle (a = 1, b = 2
+    is a figure eight). */
+Gesture figureGesture (float seconds, float beats, float angleSwing, float radiusSwing, int a, int b);
+/** breathe: the node moves in and out only (its tuning swells and returns), `cycles` times
+    per loop. */
+Gesture breatheGesture (float seconds, float beats, float radiusSwing, int cycles);
+/** steps: a sequence of radius offsets, each held for an equal share of the loop, joined by
+    raised-cosine glides over `glide` (0..1) of a step. Multiples of 1/24 are semitones
+    (with QUANTIZE the steps are exact). A tuning sequence played by the node. */
+Gesture stepGesture (float seconds, float beats, const std::vector<float>& radiusSteps, float glide);
+/** wander: a smooth, closed, seeded random loop (three harmonics per axis, peak-normalised
+    to the swings). */
+Gesture wanderGesture (float seconds, float beats, float angleSwing, float radiusSwing, uint32_t seed);
+
 /** Wraps an angle to [-pi, pi). */
 float wrapAngle (float a) noexcept;
 

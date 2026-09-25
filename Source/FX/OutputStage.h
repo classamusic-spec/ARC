@@ -21,7 +21,11 @@ public:
     void prepare (double sampleRate, int maxBlockSize);
     void reset() noexcept;
 
-    void setParameters (float widthAmount, float spaceAmount, float driveAmount, float masterGainDb) noexcept;
+    /** masterGainDb: MASTER OUTPUT (-60 dB = mute, at most +6). PATCH LEVEL is applied per
+        voice (ArcVoice), so each note keeps the trim of the patch it was played in;
+        patchGain (linear) is the current patch's trim, taken out before DRIVE and put back
+        after it, so a trim changes a patch's level and never its saturation. */
+    void setParameters (float widthAmount, float spaceAmount, float driveAmount, float masterGainDb, float patchGain = 1.0f) noexcept;
 
     /** In place. Returns false if non-finite input was detected (block zeroed). */
     bool process (float* left, float* right, int n) noexcept;
@@ -55,7 +59,7 @@ private:
 
     std::array<Line, 4> lines;
     std::array<Allpass, 4> diffusers;
-    Smoothed width, space, drive, gain;
+    Smoothed width, space, drive, gain, driveRef;
     DcBlocker dcL, dcR;
     float adaaX1[2] {}, adaaF1[2] {};
     double sr = 48000.0;

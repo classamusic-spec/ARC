@@ -67,6 +67,8 @@ struct EngineParams
     float width = 1.0f;  // 0 mono .. 1 natural .. 1.5 wide
     float space = 0.12f; // small ambience amount
     float drive = 0.0f;  // soft output saturation
+    float patchLevelDb = 0.0f;
+    uint32_t patchEpoch = 0; // advances on every preset load (voices keep the trim of their patch) // per-preset loudness trim, added to the master gain
 
     EngineParams()
     {

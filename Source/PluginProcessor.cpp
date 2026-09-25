@@ -9,6 +9,7 @@ ArcAudioProcessor::ArcAudioProcessor()
       paramCache (apvts)
 {
     paramCache.fill (engineParams);
+    engineParams.patchEpoch = patchEpoch.load(); // after the values (see beginPatchChange)
     engine.setParameters (engineParams);
     engine.postSeed (seed.load());
 
@@ -20,6 +21,7 @@ ArcAudioProcessor::ArcAudioProcessor()
 void ArcAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     paramCache.fill (engineParams);
+    engineParams.patchEpoch = patchEpoch.load(); // after the values (see beginPatchChange)
     engine.setParameters (engineParams);
     engine.prepare (sampleRate, samplesPerBlock);
     monoScratch.assign (static_cast<size_t> (std::max (samplesPerBlock, 32)), 0.0f);
@@ -75,6 +77,7 @@ void ArcAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     juce::ScopedNoDenormals noDenormals;
 
     paramCache.fill (engineParams);
+    engineParams.patchEpoch = patchEpoch.load(); // after the values (see beginPatchChange)
     engine.setParameters (engineParams);
     updateTransport();
     syncGesturesToEngine();

@@ -108,8 +108,12 @@ explanation in the chamber's caption.
 
 ## 7. Presets and state
 
-46 factory presets in 12 categories, including every example named in the brief
-(marked *):
+396 factory presets in 12 categories: 46 signature sounds, including every example named
+in the brief (marked *), and a 350-preset library (32 each of PADS, PLUCKED and STRUCK; 30
+each of BOWED, AIR and PERCUSSION; 28 each of GLASS, METAL, WOOD and MEMBRANE; 26 each of
+DRONES and EXPERIMENTAL). Every preset is measured before it ships: clean, at the same
+loudness, in tune, true to its category and unlike every other preset. The full catalogue
+with the rules and the measurements is in [PRESETS](PRESETS.md). The signature sounds:
 
 | Category | Presets |
 |---|---|
@@ -126,13 +130,16 @@ explanation in the chamber's caption.
 | PERCUSSION | Ceramic Pulse*, Tin Pulse, Log Network, Kinetic Kit |
 | EXPERIMENTAL | Hollow Circuit*, Broken Halo*, Entropy Garden, Signal Swarm |
 
+* **The browser** searches as you type (every word must match a name, tag, description or
+  category), shows how many presets each category holds or matches, and steps through the
+  results with the arrow keys.
 * **User presets** are XML files (`~/Documents/ARC/Presets/*.arcpreset`). The library
   also has favourites, previous / next, a modified marker and a host program list.
 * **Session state** covers every parameter, the four gestures, the CHAOS / motion seed,
   preset metadata and the editor size. It is versioned and restores bit-identically.
   Legacy or hostile state is handled safely.
-* **Parameters** have stable, versioned IDs (`arc.<group>.<name>.v1`); there are 65
-  (PARAMETERS).
+* **Parameters** have stable, versioned IDs (`arc.<group>.<name>.v1`); there are 66
+  (PARAMETERS), including PATCH LEVEL, each preset's stored loudness trim.
 
 ## 8. Design decisions that differ from the reference
 

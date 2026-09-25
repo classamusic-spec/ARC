@@ -67,7 +67,8 @@ void OutputStage::prepare (double sampleRate, int /*maxBlockSize*/)
         a.mask = size - 1;
     }
     const float c = smoothingCoeff (0.02, sr);
-    width.coeff = space.coeff = drive.coeff = gain.coeff = c;
+    width.coeff = space.coeff = drive.coeff = gain.coeff = driveRef.coeff = c;
+    driveRef.reset (1.0f);
     dcL.setCutoff (7.0, sr);
     dcR.setCutoff (7.0, sr);
     reset();
@@ -88,8 +89,9 @@ void OutputStage::reset() noexcept
         adaaX1[c] = adaaF1[c] = 0.0f;
 }
 
-void OutputStage::setParameters (float widthAmount, float spaceAmount, float driveAmount, float masterGainDb) noexcept
+void OutputStage::setParameters (float widthAmount, float spaceAmount, float driveAmount, float masterGainDb, float patchGain) noexcept
 {
+    driveRef.setTarget (clamp (patchGain, 0.01f, 10.0f));
     width.setTarget (clamp (widthAmount, 0.0f, 1.5f));
     space.setTarget (clamp (spaceAmount, 0.0f, 1.0f));
     drive.setTarget (clamp (driveAmount, 0.0f, 1.0f));
@@ -147,12 +149,14 @@ bool OutputStage::process (float* left, float* right, int n) noexcept
             r = r * (1.0f - 0.5f * wet) + wet * (o[1] - o[3]) * 0.5f;
         }
 
-        // Drive: ADAA tanh with level compensation, blended in with the amount.
+        // Drive: ADAA tanh with level compensation, blended in with the amount. It saturates
+        // the untrimmed signal (the patch's own level), so PATCH LEVEL never recolours it.
         const float dr = drive.next();
+        const float ref = std::max (0.01f, driveRef.next());
         if (dr > 1.0e-4f)
         {
-            const float pre = 1.0f + 5.0f * dr;
-            const float post = 1.0f / std::sqrt (pre);
+            const float pre = (1.0f + 5.0f * dr) / ref;
+            const float post = ref / std::sqrt (1.0f + 5.0f * dr);
             l = l + dr * (adaaTanh (l * pre, adaaX1[0], adaaF1[0]) * post - l);
             r = r + dr * (adaaTanh (r * pre, adaaX1[1], adaaF1[1]) * post - r);
         }

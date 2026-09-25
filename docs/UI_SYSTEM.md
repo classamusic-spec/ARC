@@ -161,10 +161,33 @@ The inspectors are dark glass cards that fade in while rising 8 px (60 ms time c
 | Node | clicking a node | RATIO (shows × ratio) · DECAY (×) · DAMP (×) · LEVEL · PAN (angle, bipolar) · LINK · REC / LOOP / clear motion |
 | CORE | clicking the CORE | topology (Star / Ring / Web / Chain; the subtitle names it and adds "SEMITONES" when quantised) · QUANTIZE · SPACE · WIDTH · DRIVE |
 | Settings | gear | voice mode (Poly / Mono / Legato) · MPE · voices · glide · bend · release · quality (Eco / Normal / High) · window size (S / M / L / XL) · version and font licence |
-| Preset browser | clicking the preset name | categories + favourites, click to audition, heart, SAVE AS, INIT, DELETE (user presets) |
+| Preset browser | clicking the preset name | search, categories with counts, favourites, click to audition, heart, SAVE AS, INIT, DELETE (user presets) |
 
 The node and CORE inspectors dock in whichever band of the chamber, top or bottom, is
 less crowded by nodes, so they never cover the CORE.
+
+### Preset browser
+
+The library is 396 presets, so the browser is built for finding, not scrolling:
+
+* **Search.** Typing anywhere in the sheet goes to the search well at the top of the list
+  (a recessed field with a magnifier that lights while it has focus). Every word must
+  appear in a preset's name, tags, description or category, so "glass bell" finds 9 and
+  "dark" in DRONES finds only dark drones. The well shows the match count, amber when
+  nothing matches; × clears it.
+* **Counts.** The category rail shows how many presets each category holds, or, while
+  searching, how many match there. Categories with no match fade back, so the counts say
+  where to look. The search narrows the selected category.
+* **Keys.** ↑ / ↓ audition the previous / next result (also from the search field), Enter
+  loads and closes, Esc clears the search, then closes.
+* **Rows** show the name, then the category (in ALL, FAVOURITES or a search) and the tags;
+  hovering shows the description as a tooltip.
+* **Size.** 680 × 500, so all 14 rail entries (plus USER) fit. At 620 × 450 the rail's
+  last entry, EXPERIMENTAL, was clipped once the library had 12 categories.
+* **Cost.** Only the rows inside the viewport are painted: ALL is about 15,000 px of rows,
+  a paint draws 10 of them, and the whole sheet paints in about 4 ms (`ui` test).
+
+![Preset search](images/arc_preset_search.jpg)
 
 ![Node inspector](images/arc_node_inspector.jpg)
 

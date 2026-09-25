@@ -417,3 +417,42 @@ TEST_CASE ("nonlinear", "extreme energy saturates coupling and stays bounded")
     CHECK (peakAbs (r.mono) <= 1.0);
     CHECK (arc::Telemetry::load (e.getTelemetry().nonFiniteEvents) == 0u);
 }
+
+TEST_CASE ("gesture", "procedural gesture shapes are closed, bounded and exact")
+{
+    // Every factory gesture shape: valid, bounded, continuous around the loop (no jump when
+    // it wraps), and an exact text round trip.
+    auto check = [] (const arc::Gesture& g, const char* name, float maxStep)
+    {
+        CHECK_MSG (g.valid, name);
+        float worstStep = 0.0f, peakR = 0.0f;
+        for (int i = 0; i < arc::Gesture::kPoints; ++i)
+        {
+            const auto a = static_cast<size_t> (i), b = static_cast<size_t> ((i + 1) % arc::Gesture::kPoints);
+            worstStep = std::max (worstStep, std::abs (g.dRadius[b] - g.dRadius[a]));
+            peakR = std::max (peakR, std::abs (g.dRadius[a]));
+        }
+        MEASURE (std::string (name) + ".worstRadiusStep", worstStep);
+        CHECK_MSG (worstStep <= maxStep, name << " step " << worstStep);
+        CHECK_MSG (peakR <= 1.0f, name);
+        const auto back = arc::Gesture::deserialise (g.serialise());
+        CHECK_MSG (back.valid, name);
+        bool exact = back.durationSeconds == g.durationSeconds && back.durationBeats == g.durationBeats;
+        for (size_t i = 0; i < g.dRadius.size(); ++i)
+            exact = exact && back.dRadius[i] == g.dRadius[i] && back.dAngle[i] == g.dAngle[i];
+        CHECK_MSG (exact, name << " round trip");
+    };
+    check (arc::figureGesture (4.0f, 8.0f, 0.8f, 0.05f, 1, 2), "figure8", 0.01f);
+    check (arc::breatheGesture (6.0f, 0.0f, 0.06f, 2), "breathe", 0.01f);
+    check (arc::wanderGesture (9.0f, 16.0f, 0.9f, 0.04f, 1234u), "wander", 0.01f);
+    // Steps: 4 semitone steps with 20 % glides - held values are exact semitones.
+    const auto steps = arc::stepGesture (2.0f, 4.0f, { 0.0f, 3.0f / 24.0f, 7.0f / 24.0f, 12.0f / 24.0f }, 0.2f);
+    check (steps, "steps", 0.2f);
+    CHECK (std::abs (steps.dRadius[16] - 0.0f) < 1.0e-6f);          // middle of step 1
+    CHECK (std::abs (steps.dRadius[48] - 3.0f / 24.0f) < 1.0e-6f);  // middle of step 2
+    CHECK (std::abs (steps.dRadius[80] - 7.0f / 24.0f) < 1.0e-6f);  // step 3
+    CHECK (std::abs (steps.dRadius[112] - 12.0f / 24.0f) < 1.0e-6f); // step 4
+    // Different seeds wander differently.
+    const auto w1 = arc::wanderGesture (9.0f, 0.0f, 0.9f, 0.04f, 1u), w2 = arc::wanderGesture (9.0f, 0.0f, 0.9f, 0.04f, 2u);
+    CHECK (std::abs (w1.dAngle[40] - w2.dAngle[40]) > 1.0e-3f);
+}

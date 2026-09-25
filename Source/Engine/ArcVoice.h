@@ -109,6 +109,16 @@ private:
     uint64_t age = 0;
 
     float gain = 1.0f, gainStep = 0.0f;      // steal fade / declick
+    // PATCH LEVEL of the patch this note was played in: followed (ramped per control block)
+    // while that patch is current, held after a preset change.
+    float patchGain = 1.0f, patchGainStep = 0.0f;
+    uint32_t patchEpochAtStart = 0;
+    void takePatchTrim (const VoiceControl& ctl) noexcept
+    {
+        patchEpochAtStart = ctl.patchEpoch;
+        patchGain = ctl.patchGain;
+        patchGainStep = 0.0f;
+    }
     float level = 0.0f, levelAcc = 0.0f;
     int levelCount = 0;
     float exciterEnergy = 0.0f, exciterAcc = 0.0f;

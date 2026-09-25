@@ -308,7 +308,7 @@ void ArcAudioProcessorEditor::layoutCanvas()
     nodeInspector.setSize (452, 92);
     coreInspector.setSize (452, 92);
     settings.setSize (380, 214);
-    browser.setSize (620, 450);
+    browser.setSize (680, 500);
     positionCards();
     canvas.invalidateBackground();
 }

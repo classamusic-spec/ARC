@@ -91,6 +91,7 @@ public:
     void advanceFrame (double dtSeconds);
     arc::ui::ResonanceField& getField() noexcept { return field; }
     void openPresetBrowser (bool open);
+    arc::ui::PresetBrowser& getPresetBrowser() noexcept { return browser; }
     void selectNode (int node);
     void selectCore();
     void openSettings (bool open);

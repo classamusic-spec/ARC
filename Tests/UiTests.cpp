@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <thread>
 
+#include "Core/FactoryPresets.h"
 #include "Core/Parameters.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
@@ -84,6 +85,10 @@ TEST_CASE ("ui", "editor snapshots")
     ed->openPresetBrowser (true);
     play (proc, ed, 0.3, {}, false);
     save (*ed, "03_preset_browser");
+    ed->getPresetBrowser().setSearchText ("glass bell");
+    play (proc, ed, 0.1, {}, false);
+    save (*ed, "03_preset_search");
+    ed->getPresetBrowser().setSearchText ({});
     ed->openPresetBrowser (false);
 
     // 4. FREEZE on a ringing bell, high DPI.
@@ -401,4 +406,84 @@ TEST_CASE ("ui", "audio cost with the editor closed and open")
     // The editor must not slow the audio thread: it only reads relaxed atomics.
     CHECK (! arctest::timingChecksEnabled || open.audioFraction < closed.audioFraction * 1.5 + 0.02);
     CHECK (! arctest::timingChecksEnabled || open.frameMs < 8.0);
+}
+
+TEST_CASE ("ui", "preset browser searches the whole library and paints only what shows")
+{
+    ArcAudioProcessor proc;
+    auto& pm = proc.getPresetManager();
+    arc::ui::PresetBrowser browser (pm);
+    browser.setSize (680, 500);
+    const int total = pm.getNumPresets();
+    MEASURE ("presets", total);
+    CHECK (total >= 396);
+
+    // No search: ALL holds everything, the categories add up to it.
+    CHECK (browser.getNumVisible() == total);
+    int sum = 0;
+    for (const auto& c : arc::presets::categories())
+    {
+        CHECK (browser.getCategoryCount (c) > 0);
+        sum += browser.getCategoryCount (c);
+    }
+    CHECK (sum == total);
+
+    // Every result contains every word (name, tags, description or category).
+    auto everyResultMatches = [&] (std::initializer_list<const char*> words)
+    {
+        for (int row = 0; row < browser.getNumVisible(); ++row)
+        {
+            const auto& p = pm.getPreset (browser.getVisiblePreset (row));
+            const auto text = (p.name + " " + p.tags + " " + p.description + " " + p.category).toLowerCase();
+            for (auto* w : words)
+                if (! text.contains (w))
+                    return false;
+        }
+        return true;
+    };
+    browser.setSearchText ("glass");
+    const int glass = browser.getNumVisible();
+    MEASURE ("matches.glass", glass);
+    CHECK (glass > 28); // the GLASS category and more (glass pads, bowed glass, ...)
+    CHECK (everyResultMatches ({ "glass" }));
+    CHECK (browser.getCategoryCount ("ALL") == glass);
+
+    browser.setSearchText ("Glass  BELL"); // case and spacing do not matter
+    const int glassBell = browser.getNumVisible();
+    MEASURE ("matches.glass_bell", glassBell);
+    CHECK (glassBell > 0);
+    CHECK (glassBell < glass);
+    CHECK (everyResultMatches ({ "glass", "bell" }));
+
+    // The search narrows the selected category, and the rail counts say where the rest are.
+    browser.selectCategory ("DRONES");
+    browser.setSearchText ("dark");
+    CHECK (browser.getNumVisible() == browser.getCategoryCount ("DRONES"));
+    CHECK (browser.getCategoryCount ("ALL") > browser.getNumVisible());
+    CHECK (everyResultMatches ({ "dark" }));
+    for (int row = 0; row < browser.getNumVisible(); ++row)
+        CHECK (pm.getPreset (browser.getVisiblePreset (row)).category == "DRONES");
+
+    browser.setSearchText ("zzqx nothing like this");
+    CHECK (browser.getNumVisible() == 0);
+    CHECK (browser.getCategoryCount ("ALL") == 0);
+
+    // Clip-aware painting: the whole library is ~15000 px of rows, a paint draws only the
+    // rows inside the viewport.
+    browser.setSearchText ({});
+    browser.selectCategory ("ALL");
+    CHECK (browser.getNumVisible() == total);
+    juce::Image img (juce::Image::ARGB, 680, 500, true);
+    const auto t0 = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10; ++i)
+    {
+        juce::Graphics g (img);
+        browser.paintEntireComponent (g, true);
+    }
+    const double ms = std::chrono::duration<double, std::milli> (std::chrono::steady_clock::now() - t0).count() / 10.0;
+    MEASURE ("fullBrowserPaintMs", ms);
+    MEASURE ("rowsPainted", browser.getLastPaintedRows());
+    CHECK (browser.getLastPaintedRows() > 0);
+    CHECK (browser.getLastPaintedRows() <= 12); // ~10 rows fit, plus partial rows at the edges
+    CHECK (ms < 40.0);
 }

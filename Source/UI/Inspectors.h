@@ -69,7 +69,8 @@ public:
 private:
     SegmentedControl topology { { "Star", "Ring", "Web", "Chain" }, true };
     ChipToggle quantise { "Quantize", true };
-    ArcKnob space { "Space", KnobStyle::glass }, width { "Width", KnobStyle::glass }, drive { "Drive", KnobStyle::glass };
+    ArcKnob space { "Space", KnobStyle::glass }, width { "Width", KnobStyle::glass }, drive { "Drive", KnobStyle::glass },
+        level { "Level", KnobStyle::glass };
 };
 
 class SettingsCard final : public GlassCard

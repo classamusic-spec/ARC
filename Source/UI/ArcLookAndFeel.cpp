@@ -249,14 +249,19 @@ void ArcLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, i
 }
 
 // --- text editors, scroll bars, labels ---------------------------------------------------
-void ArcLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor&)
+void ArcLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& e)
 {
+    // A bare editor (transparent background) sits in a well its parent draws (preset search).
+    if (e.findColour (juce::TextEditor::backgroundColourId).isTransparent())
+        return;
     g.setColour (colours::chamberDeep);
     g.fillRoundedRectangle (0.0f, 0.0f, (float) width, (float) height, 5.0f);
 }
 
 void ArcLookAndFeel::drawTextEditorOutline (juce::Graphics& g, int width, int height, juce::TextEditor& e)
 {
+    if (e.findColour (juce::TextEditor::outlineColourId).isTransparent())
+        return;
     g.setColour (e.hasKeyboardFocus (true) ? colours::cyan.withAlpha (0.8f) : colours::graphiteLine);
     g.drawRoundedRectangle (0.5f, 0.5f, (float) width - 1.0f, (float) height - 1.0f, 5.0f, 1.0f);
 }

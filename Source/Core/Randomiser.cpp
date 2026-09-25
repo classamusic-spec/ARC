@@ -151,6 +151,7 @@ void regenerate (ValueMap& v, juce::Random& rng)
 
     v[params::exciterType] = static_cast<float> (exciter);
     v[params::materialType] = static_cast<float> (material);
+    v[params::patchLevel] = 0.0f; // a new patch starts from unity level
     v[params::topology] = static_cast<float> (topology);
     const bool quantised = rng.nextFloat() < 0.3f;
     v[params::quantise] = quantised ? 1.0f : 0.0f;
