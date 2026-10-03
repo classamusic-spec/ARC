@@ -588,13 +588,14 @@ TEST_CASE ("presets", "a preset's level trim applies to its own notes only")
     // PATCH LEVEL is per note: switching from a loud patch (Black Bell, +1.4 dB) to a quiet one
     // (Condensation, +18 dB) must not lift the bell's ringing tail by the difference, and a
     // note played in the same block as the switch must get the new patch's trim at once.
+    // render() produces whole blocks only (0.6 s -> 0.597 s), so every window must be
+    // checked to lie inside what was rendered: reading past it measured whatever memory
+    // followed the samples (zeros when the test ran alone, garbage after a long run).
     auto rms = [] (const Signal& s, double from, double len)
     {
-        double acc = 0;
         const int a = static_cast<int> (from * kSr), n = static_cast<int> (len * kSr);
-        for (int i = a; i < a + n; ++i)
-            acc += static_cast<double> (s[static_cast<size_t> (i)]) * s[static_cast<size_t> (i)];
-        return std::sqrt (acc / n);
+        CHECK (a >= 0 && a + n <= static_cast<int> (s.size()));
+        return arctest::rms (s, a, n);
     };
     ArcAudioProcessor p;
     auto& pm = p.getPresetManager();
@@ -607,7 +608,7 @@ TEST_CASE ("presets", "a preset's level trim applies to its own notes only")
                                   if (t > 0.3 && t < 0.3 + kBlock / kSr)
                                       m.addEvent (juce::MidiMessage::noteOff (1, 48), 0);
                               });
-    const double before = rms (bell.mono, 0.5, 0.1);
+    const double before = rms (bell.mono, 0.48, 0.1);
     pm.loadPreset (pm.findPreset ("factory/Condensation"));
     const auto tail = render (p, 0.3, [] (juce::MidiBuffer&, double) {});
     const double after = rms (tail.mono, 0.0, 0.1);
@@ -635,7 +636,7 @@ TEST_CASE ("presets", "a preset's level trim applies to its own notes only")
                        });
     };
     const auto switched = playAfterSwitch (true), fresh = playAfterSwitch (false);
-    const double diffDb = 20.0 * std::log10 (rms (switched.mono, 0.4, 0.8) / rms (fresh.mono, 0.4, 0.8));
+    const double diffDb = 20.0 * std::log10 (rms (switched.mono, 0.4, 0.75) / rms (fresh.mono, 0.4, 0.75));
     MEASURE ("newNoteLevelVsFresh_dB", diffDb);
     CHECK (std::abs (diffDb) < 2.0);
 }
