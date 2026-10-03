@@ -19,6 +19,8 @@ GlassCard::GlassCard (const juce::String& t) : title (t)
 
 void GlassCard::setTitle (const juce::String& t, const juce::String& sub)
 {
+    if (t == title && sub == subtitle)
+        return; // refreshed several times a second: repaint only on a change
     title = t;
     subtitle = sub;
     repaint();
@@ -55,14 +57,25 @@ void GlassCard::resized() { closeButton.setBounds (getWidth() - 34, 10, 24, 24);
 void GlassCard::paint (juce::Graphics& g)
 {
     const auto b = getLocalBounds().toFloat().reduced (1.0f);
-    // Shadow, glass body, fine cyan hairline, top sheen.
+    juce::Path shape;
+    shape.addRoundedRectangle (b, 12.0f);
+    // Shadow, smoked-glass body with a soft sheen from the top, the lit top edge, and a
+    // fine cyan hairline. (A rectangle shadow: drawForPath blurs an image of the whole
+    // card on every paint, 30 ms for the preset sheet.)
     juce::DropShadow (juce::Colours::black.withAlpha (0.55f), 18, { 0, 6 }).drawForRectangle (g, b.toNearestInt());
-    juce::ColourGradient body (juce::Colour (0xff1d232b), b.getX(), b.getY(), juce::Colour (0xff0b0f14), b.getX(), b.getBottom(), false);
+    juce::ColourGradient body (juce::Colour (0xff1c222a), b.getX(), b.getY(), juce::Colour (0xff0a0e13), b.getX(), b.getBottom(), false);
+    body.addColour (0.4, juce::Colour (0xff131920));
     g.setGradientFill (body);
-    g.fillRoundedRectangle (b, 12.0f);
-    g.setColour (juce::Colours::white.withAlpha (0.04f));
-    g.fillRoundedRectangle (b.withHeight (juce::jmin (40.0f, b.getHeight() * 0.45f)).reduced (1.0f), 11.0f);
-    g.setColour (colours::cyan.withAlpha (0.35f));
+    g.fillPath (shape);
+    g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (0.045f), b.getX(), b.getY(), juce::Colours::white.withAlpha (0.0f),
+                                             b.getX(), b.getY() + juce::jmin (64.0f, b.getHeight() * 0.6f), false));
+    g.fillPath (shape);
+    juce::ColourGradient edge (juce::Colours::white.withAlpha (0.0f), b.getX() + 12.0f, 0.0f, juce::Colours::white.withAlpha (0.0f),
+                               b.getRight() - 12.0f, 0.0f, false);
+    edge.addColour (0.5, juce::Colours::white.withAlpha (0.14f));
+    g.setGradientFill (edge);
+    g.fillRect (b.getX() + 12.0f, b.getY() + 1.0f, b.getWidth() - 24.0f, 1.0f);
+    g.setColour (colours::cyan.withAlpha (0.32f));
     g.drawRoundedRectangle (b, 12.0f, 1.0f);
 
     g.setColour (colours::glassText);
@@ -201,19 +214,22 @@ void CoreInspector::refresh()
 
 void CoreInspector::resized()
 {
+    // Dock layout: title block (with QUANTIZE beside it) over the topology switch on the
+    // left, the output knobs on the right.
     GlassCard::resized();
     closeButton.setBounds (getWidth() - 30, 8, 22, 22);
-    auto r = getLocalBounds().reduced (12, 8);
-    auto left = r.removeFromLeft (104);
-    r.removeFromRight (22);
-    quantise.setBounds (left.removeFromBottom (22).withWidth (92));
-    auto knobsArea = r.removeFromRight (r.getWidth() * 56 / 100);
+    auto r = getLocalBounds().reduced (14, 10);
+    r.removeFromRight (20);
+    auto knobsArea = r.removeFromRight (168);
     const int kw = knobsArea.getWidth() / 4;
+    knobsArea = knobsArea.withSizeKeepingCentre (knobsArea.getWidth(), juce::jmin (knobsArea.getHeight(), kw + 18));
     space.setBounds (knobsArea.removeFromLeft (kw));
     width.setBounds (knobsArea.removeFromLeft (kw));
     drive.setBounds (knobsArea.removeFromLeft (kw));
     level.setBounds (knobsArea);
-    topology.setBounds (r.reduced (6, 0).withSizeKeepingCentre (r.getWidth() - 12, 24));
+    r.removeFromRight (12);
+    topology.setBounds (r.removeFromBottom (24));
+    quantise.setBounds (r.removeFromTop (22).removeFromRight (90));
 }
 
 // ---------------------------------------------------------------------------------------

@@ -21,9 +21,16 @@ const char* const kNodeNames[4] = { "A", "B", "C", "D" };
 
 float fract (float x) { return x - std::floor (x); }
 
-/** Procedural sphere: cracked obsidian (nodes / core) or polished steel (junctions). */
-juce::Image makeSphere (int size, uint32_t seed, int cells, bool metal, juce::Colour rimTint, float rimAmount)
+enum class Finish
 {
+    obsidian, // nodes and CORE: cracked volcanic glass
+    pearl     // ring junctions: smoked glass beads, lit from within
+};
+
+/** Procedural sphere, lit from the upper left. */
+juce::Image makeSphere (int size, uint32_t seed, int cells, Finish finish, juce::Colour rimTint, float rimAmount)
+{
+    const bool pearl = finish == Finish::pearl;
     size = juce::jmax (4, size);
     juce::Image img (juce::Image::ARGB, size, size, true);
     juce::Random r (static_cast<juce::int64> (seed));
@@ -52,15 +59,20 @@ juce::Image makeSphere (int size, uint32_t seed, int cells, bool metal, juce::Co
             const float cover = juce::jlimit (0.0f, 1.0f, (1.0f - d) * half + 0.5f);
             const float nz = std::sqrt (juce::jmax (0.0f, 1.0f - juce::jmin (1.0f, r2)));
             const float diff = juce::jmax (0.0f, (nx * lx + ny * ly + nz * lz) / ll);
-            const float spec = std::pow (juce::jmax (0.0f, (nx * hx + ny * hy + nz * hz) / hl), metal ? 26.0f : 42.0f);
+            const float spec = std::pow (juce::jmax (0.0f, (nx * hx + ny * hy + nz * hz) / hl), pearl ? 90.0f : 42.0f);
             const float fres = std::pow (1.0f - nz, 2.4f);
 
             float cr, cg, cb;
-            if (metal)
+            if (pearl)
             {
-                const float v = 0.18f + 0.7f * diff + 0.25f * (1.0f - ny) * 0.5f;
-                cr = v * 0.93f; cg = v * 0.96f; cb = v;
-                cr += spec * 0.9f; cg += spec * 0.9f; cb += spec * 0.95f;
+                // Smoked glass: a dark body, light gathering in the lower half (as if lit by
+                // the flow through it), one sharp glint.
+                const float body = 0.045f + 0.06f * diff;
+                const float inner = 0.22f * juce::jlimit (0.0f, 1.0f, 0.55f + 0.6f * ny) * nz * nz;
+                cr = body + inner * 0.25f;
+                cg = body * 1.1f + inner * 0.78f;
+                cb = body * 1.3f + inner * 0.95f;
+                cr += spec * 0.95f; cg += spec * 0.97f; cb += spec;
             }
             else
             {
@@ -294,6 +306,7 @@ void ResonanceField::advance (float dt, bool engineRunning)
         tremor[n] = { smoothTowards (tremor[n].x, tremorTarget[n].x, dt, 0.25f), smoothTowards (tremor[n].y, tremorTarget[n].y, dt, 0.25f) };
     }
     coreHover = smoothTowards (coreHover, hoverCore ? 1.0f : 0.0f, dt, 0.08f);
+    hintAnim = smoothTowards (hintAnim, mouseInside && dragNode < 0 ? 1.0f : 0.0f, dt, 0.16f);
     coreSelect = smoothTowards (coreSelect, selection.target == Target::core ? 1.0f : 0.0f, dt, 0.1f);
 }
 
@@ -306,9 +319,9 @@ void ResonanceField::ensureSprites (float scale)
         return;
     spriteScale = scale;
     // Everything at device resolution: blitted 1:1 each frame, never resampled.
-    nodeSprite = makeSphere (juce::roundToInt (nodeR * 2.0f * scale), 0xA11CEu, 22, false, colours::cyan, 0.55f);
-    coreSprite = makeSphere (juce::roundToInt (coreR * 2.0f * scale), 0xC0DEu, 38, false, colours::cyan, 0.35f);
-    junctionSprite = makeSphere (juce::roundToInt (nodeR * 0.62f * scale), 0x5EEDu, 0, true, colours::cyan, 0.15f);
+    nodeSprite = makeSphere (juce::roundToInt (nodeR * 2.0f * scale), 0xA11CEu, 22, Finish::obsidian, colours::cyan, 0.55f);
+    coreSprite = makeSphere (juce::roundToInt (coreR * 2.0f * scale), 0xC0DEu, 38, Finish::obsidian, colours::cyan, 0.35f);
+    junctionSprite = makeSphere (juce::roundToInt (nodeR * 0.52f * scale), 0x5EEDu, 0, Finish::pearl, colours::cyan, 0.7f);
     haloSprite = makeHalo (juce::roundToInt (nodeR * 3.6f * scale), colours::cyan);
     coreHaloSprite = makeHalo (juce::roundToInt (coreR * 3.4f * scale), colours::cyan);
     junctionHaloSprite = makeHalo (juce::roundToInt (nodeR * 1.8f * scale), colours::cyan);
@@ -364,9 +377,9 @@ void ResonanceField::paintRings (juce::Graphics& g, float tension)
     const float outer = 0.98f * (0.97f + 0.06f * tension);
 
     auto ellipse = [&] (float k) { return juce::Rectangle<float> (rx * 2.0f * k, ry * 2.0f * k).withCentre (centre); };
-    g.setColour (colours::glassFaint.withAlpha (0.42f));
+    g.setColour (colours::glassFaint.withAlpha (0.32f));
     g.drawEllipse (ellipse (inner), 0.8f);
-    g.setColour (colours::glassFaint.withAlpha (0.22f));
+    g.setColour (colours::glassFaint.withAlpha (0.2f));
     g.drawEllipse (ellipse (outer), 0.7f);
 
     // Dotted mid ring
@@ -384,9 +397,10 @@ void ResonanceField::paintRings (juce::Graphics& g, float tension)
     auto line = [&] (juce::Point<float> a, juce::Point<float> c2)
     {
         juce::ColourGradient cg (colours::glassMuted.withAlpha (0.0f), a.x, a.y, colours::glassMuted.withAlpha (0.0f), c2.x, c2.y, false);
-        cg.addColour (0.18, colours::glassMuted.withAlpha (0.35f));
-        cg.addColour (0.5, colours::glassMuted.withAlpha (0.12f));
-        cg.addColour (0.82, colours::glassMuted.withAlpha (0.35f));
+        // Barely there: the axes orient the eye without competing with the network.
+        cg.addColour (0.18, colours::glassMuted.withAlpha (0.2f));
+        cg.addColour (0.5, colours::glassMuted.withAlpha (0.05f));
+        cg.addColour (0.82, colours::glassMuted.withAlpha (0.2f));
         g.setGradientFill (cg);
         g.drawLine ({ a, c2 }, 0.8f);
     };
@@ -397,32 +411,44 @@ void ResonanceField::paintRings (juce::Graphics& g, float tension)
     // Axis end glints (cyan), as in the reference.
     for (auto p : { juce::Point<float> (centre.x, axisTop + 4.0f), juce::Point<float> (centre.x, centre.y + ry * 0.99f) })
     {
-        g.setColour (colours::cyan.withAlpha (0.12f));
-        g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre (p));
-        g.setColour (colours::cyanBright.withAlpha (0.55f));
-        g.fillEllipse (juce::Rectangle<float> (2.2f, 2.2f).withCentre (p));
+        g.setColour (colours::cyan.withAlpha (0.1f));
+        g.fillEllipse (juce::Rectangle<float> (8.0f, 8.0f).withCentre (p));
+        g.setColour (colours::cyanBright.withAlpha (0.45f));
+        g.fillEllipse (juce::Rectangle<float> (2.0f, 2.0f).withCentre (p));
     }
 }
 
 void ResonanceField::paintHeader (juce::Graphics& g)
 {
+    // The chamber's caption. At rest it is only the title; the field's own hint line
+    // appears while the mouse is in the chamber, help for any other control while that
+    // control is hovered, and the frozen state while FREEZE holds.
+    const float visible = 1.0f - modalDim;
+    if (visible <= 0.001f)
+        return;
     const auto b = getLocalBounds().toFloat();
     const auto titleArea = juce::Rectangle<float> (b.getX(), b.getY() + b.getHeight() * 0.055f, b.getWidth(), 22.0f);
-    const auto bodyArea = titleArea.translated (0.0f, 24.0f).withHeight (16.0f);
+    const auto bodyArea = titleArea.translated (0.0f, 23.0f).withHeight (16.0f);
     const auto defaultTitle = juce::String ("RESONANCE FIELD");
     const auto defaultBody = juce::String::fromUTF8 ("DRAG NODES  \xc2\xb7  SHAPE RESONANCE  \xc2\xb7  CREATE MOTION");
     const auto frozenBody = juce::String::fromUTF8 ("FROZEN  \xc2\xb7  THE NETWORK HOLDS ITS ENERGY");
+    const bool frozen = model.freeze > 0.5f;
 
     auto draw = [&] (const juce::String& t, const juce::String& body, float alpha)
     {
+        alpha *= visible;
         if (alpha <= 0.001f)
             return;
-        const auto title = t.isNotEmpty() ? t : defaultTitle;
-        const auto sub = t.isNotEmpty() ? body : (model.freeze > 0.5f ? frozenBody : defaultBody);
-        g.setColour (colours::glassText.withAlpha (0.92f * alpha));
-        drawTrackedText (g, title.toUpperCase(), titleArea, Fonts::regular (17.0f, 0.3f), juce::Justification::centred);
-        g.setColour (colours::glassMuted.withAlpha (0.95f * alpha));
-        drawTrackedText (g, sub.toUpperCase(), bodyArea, Fonts::regular (10.0f, 0.2f), juce::Justification::centred);
+        const bool atRest = t.isEmpty();
+        g.setColour (colours::glassText.withAlpha ((atRest ? 0.84f : 0.95f) * alpha));
+        drawTrackedText (g, (atRest ? defaultTitle : t).toUpperCase(), titleArea, Fonts::regular (15.5f, 0.34f),
+                         juce::Justification::centred);
+        const auto sub = atRest ? (frozen ? frozenBody : defaultBody) : body;
+        const float subAlpha = alpha * (atRest && ! frozen ? hintAnim * 0.8f : 0.95f);
+        if (sub.isEmpty() || subAlpha <= 0.001f)
+            return;
+        g.setColour ((atRest && frozen ? colours::ice.withAlpha (0.8f) : colours::glassMuted).withMultipliedAlpha (subAlpha));
+        drawTrackedText (g, sub.toUpperCase(), bodyArea, Fonts::regular (9.5f, 0.22f), juce::Justification::centred);
     };
     const float f = easeOutCubic (captionFade);
     draw (prevTitle, prevBody, 1.0f - f);
@@ -449,17 +475,20 @@ void ResonanceField::paintSideReadouts (juce::Graphics& g)
     harmonic *= 0.25f;
     const float stability = 1.0f - paramValue (params::chaos);
     const std::array<std::pair<const char*, float>, 3> rows { { { "STABILITY", stability }, { "FLOW", flow }, { "HARMONICS", harmonic } } };
+    const float visible = 1.0f - modalDim;
+    if (visible <= 0.001f)
+        return;
     const float lx = b.getX() + b.getWidth() * 0.07f;
     float y = centre.y - lineH * 1.5f;
     for (auto& [label, value] : rows)
     {
-        g.setColour (colours::glassMuted.withAlpha (0.8f));
+        g.setColour (colours::glassMuted.withAlpha (0.75f * visible));
         drawTrackedText (g, label, { lx, y, 90.0f, lineH }, Fonts::regular (9.5f, 0.22f), juce::Justification::centredLeft);
         for (int i = 0; i < 5; ++i)
         {
             const bool lit = value > ((float) i + 0.5f) / 5.0f;
             const auto dot = juce::Rectangle<float> (3.0f, 3.0f).withCentre ({ lx + 72.0f + (float) i * 6.5f, y + lineH * 0.5f });
-            g.setColour (lit ? colours::cyan.withAlpha (0.85f) : colours::glassFaint.withAlpha (0.6f));
+            g.setColour (lit ? colours::cyan.withAlpha (0.85f * visible) : colours::glassFaint.withAlpha (0.6f * visible));
             g.fillEllipse (dot);
         }
         y += lineH;
@@ -470,6 +499,7 @@ void ResonanceField::paintSideReadouts (juce::Graphics& g)
     const float rxPos = b.getRight() - b.getWidth() * 0.07f - 110.0f;
     y = centre.y - lineH * 1.5f;
     std::array<juce::String, 3> lines;
+    float alpha = 0.95f;
     if (info >= 0)
     {
         const auto u = (size_t) info;
@@ -479,11 +509,17 @@ void ResonanceField::paintSideReadouts (juce::Graphics& g)
     else if (hoverCore || selection.target == Target::core)
         lines = { "CORE", "THE NOTE YOU PLAY", juce::String::fromUTF8 ("CLICK  \xc2\xb7  NETWORK") };
     else
+    {
+        // How to play the field: only while the mouse is in it.
         lines = { juce::String::fromUTF8 ("DRAG  \xc2\xb7  RETUNE"), juce::String::fromUTF8 ("ALT-DRAG  \xc2\xb7  RECORD"),
                   juce::String::fromUTF8 ("CLICK  \xc2\xb7  INSPECT") };
+        alpha = 0.7f * hintAnim;
+    }
+    if (alpha * visible <= 0.001f)
+        return;
     for (auto& l : lines)
     {
-        g.setColour (colours::glassMuted.withAlpha (info >= 0 ? 0.95f : 0.7f));
+        g.setColour (colours::glassMuted.withAlpha (alpha * visible));
         drawTrackedText (g, l, { rxPos, y, 110.0f, lineH },
                          Fonts::regular (9.5f, 0.22f), juce::Justification::centredRight);
         y += lineH;
@@ -786,6 +822,11 @@ void ResonanceField::paint (juce::Graphics& g)
     for (int n = 0; n < 4; ++n)
         paintNode (g, n, pos[(size_t) n]);
     paintFreeze (g);
+    if (modalDim > 0.001f)
+    {
+        g.setColour (colours::chamberDeep.withAlpha (0.55f * modalDim));
+        g.fillPath (chamber);
+    }
     paintHeader (g);
     paintSideReadouts (g);
 }
@@ -793,8 +834,15 @@ void ResonanceField::paint (juce::Graphics& g)
 // ---------------------------------------------------------------------------------------
 // Interaction
 // ---------------------------------------------------------------------------------------
+void ResonanceField::mouseEnter (const juce::MouseEvent& e)
+{
+    mouseInside = true;
+    mouseMove (e);
+}
+
 void ResonanceField::mouseMove (const juce::MouseEvent& e)
 {
+    mouseInside = true;
     const int n = hitNode (e.position);
     const bool c = n < 0 && hitCore (e.position);
     if (n != hoverNode || c != hoverCore)
@@ -810,6 +858,7 @@ void ResonanceField::mouseExit (const juce::MouseEvent&)
 {
     hoverNode = -1;
     hoverCore = false;
+    mouseInside = false;
 }
 
 void ResonanceField::mouseDown (const juce::MouseEvent& e)

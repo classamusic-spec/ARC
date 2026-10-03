@@ -5,6 +5,7 @@
 // screen readers get it through the normal TooltipClient interface.
 
 #include <functional>
+#include <vector>
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -89,7 +90,14 @@ class RoundButton : public juce::Button
 public:
     RoundButton (const juce::String& label, gfx::Icon icon, bool isToggle);
     void paintButton (juce::Graphics&, bool highlighted, bool down) override;
-    void setActivity (float a) { activity = a; repaint(); } // extra glow (e.g. FREEZE amount)
+    /** Extra glow (e.g. the FREEZE amount); set every frame, repaints only on a change. */
+    void setActivity (float a)
+    {
+        if (std::abs (a - activity) < 0.002f)
+            return;
+        activity = a;
+        repaint();
+    }
 
     std::function<void (const juce::MouseEvent&)> onClickWithMods;
 
@@ -123,6 +131,14 @@ public:
     void mouseExit (const juce::MouseEvent&) override;
 
 private:
+    /** Segment rectangles (each as wide as its label needs, plus an equal share of the
+        spare room) and the label font that makes every label fit. */
+    struct Layout
+    {
+        std::vector<juce::Rectangle<float>> segments;
+        juce::Font font { juce::FontOptions() };
+    };
+    Layout layout() const;
     int segmentAt (juce::Point<int> p) const;
     juce::StringArray options;
     bool glass;

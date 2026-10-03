@@ -2,6 +2,8 @@
 
 #include "UI/Theme.h"
 
+#include <vector>
+
 namespace arc::gfx
 {
 
@@ -27,31 +29,55 @@ juce::Path superellipse (juce::Rectangle<float> r, float n, int segments)
     return p;
 }
 
-const juce::Image& brushedTexture()
+juce::Image brushedTexture()
 {
-    static const juce::Image tex = []
+    const juce::SharedResourcePointer<SharedUiCaches> caches;
     {
-        constexpr int w = 512, h = 512;
-        juce::Image img (juce::Image::ARGB, w, h, true);
+        const juce::SpinLock::ScopedLockType sl (caches->lock);
+        if (caches->brushed.isValid())
+            return caches->brushed;
+    }
+    // Satin brushing. Each row is one long, soft streak: a per-row level, a few slow
+    // waves whose periods divide the tile, and fine grain smeared along the brushing
+    // direction (a circular blur). Everything wraps, so the tile repeats seamlessly.
+    constexpr int w = 512, h = 512, blur = 7;
+    juce::Image img (juce::Image::ARGB, w, h, true);
+    {
         juce::Random rng (0xA2C1);
         juce::Image::BitmapData data (img, juce::Image::BitmapData::writeOnly);
-        // Each row: a slowly varying streak value plus fine grain, smeared horizontally.
+        const float twoPi = juce::MathConstants<float>::twoPi;
+        std::vector<float> grain ((size_t) w);
+        float previous = 0.0f;
         for (int y = 0; y < h; ++y)
         {
-            float streak = rng.nextFloat() * 2.0f - 1.0f;
-            float v = 0.0f;
+            // Neighbouring rows are loosely related, as real brushing marks are.
+            const float level = previous = 0.45f * previous + 0.55f * (rng.nextFloat() * 2.0f - 1.0f);
+            const float k[3] = { 1.0f, 3.0f, 7.0f };
+            float amp[3], phase[3];
+            for (int i = 0; i < 3; ++i)
+            {
+                amp[i] = rng.nextFloat() * 0.22f;
+                phase[i] = rng.nextFloat() * twoPi;
+            }
+            for (auto& v : grain)
+                v = rng.nextFloat() * 2.0f - 1.0f;
+            float window = 0.0f;
+            for (int j = -blur; j <= blur; ++j)
+                window += grain[(size_t) ((j + w) % w)];
             for (int x = 0; x < w; ++x)
             {
-                if (rng.nextInt (64) == 0)
-                    streak = 0.7f * streak + 0.3f * (rng.nextFloat() * 2.0f - 1.0f);
-                v = 0.92f * v + 0.08f * (streak + 0.6f * (rng.nextFloat() * 2.0f - 1.0f));
-                const auto level = (juce::uint8) juce::jlimit (0, 255, (int) (128.0f + 180.0f * v));
-                data.setPixelColour (x, y, juce::Colour (level, level, level, (juce::uint8) 255));
+                float v = 0.6f * level + 0.9f * window / (float) (2 * blur + 1) * 2.4f;
+                for (int i = 0; i < 3; ++i)
+                    v += amp[i] * std::sin (twoPi * k[i] * (float) x / (float) w + phase[i]);
+                window += grain[(size_t) ((x + blur + 1) % w)] - grain[(size_t) ((x - blur + w) % w)];
+                const auto l = (juce::uint8) juce::jlimit (0, 255, (int) (128.0f + 100.0f * v));
+                data.setPixelColour (x, y, juce::Colour (l, l, l, (juce::uint8) 255));
             }
         }
-        return img;
-    }();
-    return tex;
+    }
+    const juce::SpinLock::ScopedLockType sl (caches->lock);
+    caches->brushed = img;
+    return img;
 }
 
 namespace
@@ -94,6 +120,18 @@ void paintChassis (juce::Graphics& g, juce::Rectangle<float> bounds, float corne
                                     juce::Colours::white.withAlpha (0.0f), plate.getCentreX(), plate.getY() + plate.getHeight() * 0.55f,
                                     true);
         g.setGradientFill (sheen);
+        g.fillRect (plate);
+    }
+
+    // Vignette: the plate's edges fall a little out of the key light.
+    {
+        juce::Graphics::ScopedSaveState s (g);
+        g.reduceClipRegion (platePath);
+        juce::ColourGradient vignette (juce::Colours::black.withAlpha (0.0f), plate.getCentreX(), plate.getCentreY() - plate.getHeight() * 0.1f,
+                                       juce::Colours::black.withAlpha (0.07f), plate.getRight() + plate.getWidth() * 0.05f,
+                                       plate.getBottom() + plate.getHeight() * 0.05f, true);
+        vignette.addColour (0.6, juce::Colours::black.withAlpha (0.0f));
+        g.setGradientFill (vignette);
         g.fillRect (plate);
     }
 

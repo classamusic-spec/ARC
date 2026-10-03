@@ -10,6 +10,7 @@
 
 #include "Core/FactoryPresets.h"
 #include "Core/Parameters.h"
+#include "Graphics/SilverSurface.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 
@@ -116,6 +117,11 @@ TEST_CASE ("ui", "editor snapshots")
     ed->setSize (900, 675);
     play (proc, ed, 0.3, { 52 }, true);
     save (*ed, "05_small_window");
+
+    // 8. A fractional display scale (150 %): sprites are rendered for it, not resampled.
+    ed->setSize (1200, 900);
+    play (proc, ed, 0.3, { 52 }, true);
+    save (*ed, "09_display_scale_150", 1.5f);
     CHECK (true);
 }
 
@@ -486,4 +492,117 @@ TEST_CASE ("ui", "preset browser searches the whole library and paints only what
     CHECK (browser.getLastPaintedRows() > 0);
     CHECK (browser.getLastPaintedRows() <= 12); // ~10 rows fit, plus partial rows at the edges
     CHECK (! arctest::timingChecksEnabled || ms < 40.0);
+}
+
+TEST_CASE ("ui", "labels keep every letter and switch segments follow their labels")
+{
+    // Text too wide for its area shrinks until it fits (to 70 % at most) instead of losing
+    // letters; text that fits is left alone.
+    const auto font = arc::ui::Fonts::label (11.0f);
+    const juce::String text ("CHAIN");
+    auto width = [] (const juce::Font& f, const juce::String& t)
+    { return arc::ui::textWidth (f, t) - f.getExtraKerningFactor() * f.getHeight(); };
+    const float natural = width (font, text);
+    const auto fitted = arc::ui::fitFont (font, text, natural * 0.8f, 11.0f * 0.7f);
+    MEASURE ("fittedLabelHeight", fitted.getHeight());
+    CHECK (fitted.getHeight() < 11.0f);
+    CHECK (width (fitted, text) <= natural * 0.8f + 0.5f);
+    CHECK (juce::approximatelyEqual (arc::ui::fitFont (font, text, natural * 1.5f, 7.7f).getHeight(), 11.0f));
+
+    // A narrow topology switch: segments are sized to their labels, and a sweep across
+    // the switch selects every option once, in order.
+    arc::ui::SegmentedControl seg ({ "Star", "Ring", "Web", "Chain" }, true);
+    seg.setSize (150, 24);
+    std::vector<int> order;
+    for (int x = 1; x < seg.getWidth() - 1; ++x)
+    {
+        seg.mouseDown (mouse (seg, { (float) x, 12.0f }, { (float) x, 12.0f }, {}, 1, false));
+        if (order.empty() || order.back() != seg.getIndex())
+            order.push_back (seg.getIndex());
+    }
+    CHECK ((order == std::vector<int> { 0, 1, 2, 3 }));
+}
+
+TEST_CASE ("ui", "control sheet")
+{
+    // Every control state on one sheet at 2x, for design review: hover, drag, pressed and
+    // disabled states never appear in the editor snapshots.
+    using namespace arc::ui;
+    constexpr float scale = 2.0f;
+    const juce::Rectangle<float> area (0.0f, 0.0f, 1000.0f, 760.0f);
+    juce::Image sheet (juce::Image::RGB, (int) (area.getWidth() * scale), (int) (area.getHeight() * scale), true);
+    {
+        juce::Graphics g (sheet);
+        g.addTransform (juce::AffineTransform::scale (scale));
+        arc::gfx::paintChassis (g, area, 22.0f);
+        const juce::Rectangle<float> glassArea (24.0f, 430.0f, 420.0f, 120.0f);
+        g.setColour (colours::graphite);
+        g.fillRoundedRectangle (glassArea, 12.0f);
+
+        struct State
+        {
+            float value;
+            bool hover, drag, bipolar, enabled;
+        };
+        const State states[6] = { { 0.62f, false, false, false, true }, { 0.62f, true, false, false, true },
+                                  { 0.62f, true, true, false, true },   { 0.3f, false, false, true, true },
+                                  { 0.62f, false, false, false, false }, { 0.0f, false, false, false, true } };
+        auto knobRow = [&] (KnobStyle style, float size, float x, float y)
+        {
+            for (auto& st : states)
+            {
+                ArcLookAndFeel::paintKnob (g, { x, y, size, size }, st.value, style, st.hover, st.drag, st.bipolar, st.enabled);
+                x += size + 8.0f;
+            }
+        };
+        knobRow (KnobStyle::macro, 150.0f, 30.0f, 30.0f);
+        knobRow (KnobStyle::master, 80.0f, 30.0f, 200.0f);
+        knobRow (KnobStyle::small, 56.0f, 560.0f, 212.0f);
+        knobRow (KnobStyle::glass, 56.0f, 40.0f, 462.0f);
+
+        // Keys: rest, hover, pressed, engaged.
+        RoundButton key ("Freeze", arc::gfx::Icon::freeze, true);
+        key.setSize (66, 96);
+        const std::array<std::array<bool, 3>, 4> keyStates { { { false, false, false }, { true, false, false },
+                                                               { true, true, false }, { false, false, true } } };
+        float kx = 30.0f;
+        for (auto& ks : keyStates)
+        {
+            key.setToggleState (ks[2], juce::dontSendNotification);
+            juce::Graphics::ScopedSaveState s (g);
+            g.setOrigin (juce::Point<float> (kx, 300.0f).toInt());
+            key.paintButton (g, ks[0], ks[1]);
+            kx += 80.0f;
+        }
+
+        // Tiles: rest, hover, selected, selected + hover, and the compact row.
+        SelectorTile tile ("Strike", arc::gfx::Icon::strike);
+        tile.setSize (233, 58);
+        const std::array<std::array<bool, 2>, 4> tileStates { { { false, false }, { true, false }, { false, true }, { true, true } } };
+        float ty = 300.0f;
+        float tx = 380.0f;
+        for (auto& ts : tileStates)
+        {
+            tile.setSelectedState (ts[1]);
+            juce::Graphics::ScopedSaveState s (g);
+            g.setOrigin (juce::Point<float> (tx, ty).toInt());
+            tile.paintButton (g, ts[0], false);
+            tx += 245.0f;
+            if (tx > 700.0f)
+                tx = 380.0f, ty += 66.0f;
+        }
+        tile.setSize (233, 40);
+        tile.setCompact (1.0f);
+        tile.setSelectedState (true);
+        {
+            juce::Graphics::ScopedSaveState s (g);
+            g.setOrigin (juce::Point<float> (480.0f, 450.0f).toInt());
+            tile.paintButton (g, false, false);
+        }
+    }
+    std::filesystem::create_directories (arctest::outputDir() + "/ui");
+    juce::File f (arctest::outputDir() + "/ui/08_control_sheet.png");
+    f.deleteFile();
+    juce::FileOutputStream os (f);
+    CHECK (juce::PNGImageFormat().writeImageToStream (sheet, os));
 }

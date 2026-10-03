@@ -1,9 +1,9 @@
 #pragma once
 
-// ARC LookAndFeel: knobs (graphite face, machined silver ring, segmented ice-cyan
-// arc, minimal pointer), popup menus and tooltips in dark glass, text editors,
-// scroll bars. Custom controls (Controls.h) draw themselves; this class covers the
-// JUCE widgets ARC reuses.
+// ARC LookAndFeel: knobs (turned chrome ring and anodized face, rendered per pixel and
+// cached; an engraved track with a luminous ice-cyan value arc; minimal pointer), round
+// key caps, popup menus and tooltips in dark glass, text editors, scroll bars. Custom
+// controls (Controls.h) draw themselves; this class covers the JUCE widgets ARC reuses.
 
 #include "UI/Theme.h"
 
@@ -29,6 +29,10 @@ public:
     /** Paints a complete ARC knob (also used by previews / snapshots). */
     static void paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion, KnobStyle style, bool hover,
                            bool dragging, bool bipolar = false, bool enabled = true);
+
+    /** A round machined key cap (chrome bevel, satin turned face) filling `circle`, with
+        its contact shadow; pressed, the cap reads concave. */
+    static void paintKeyCap (juce::Graphics& g, juce::Rectangle<float> circle, bool pressed);
 
     void drawRotarySlider (juce::Graphics&, int x, int y, int width, int height, float sliderPosProportional,
                            float rotaryStartAngle, float rotaryEndAngle, juce::Slider&) override;
@@ -60,6 +64,10 @@ public:
 
     static constexpr float kRotaryStart = juce::MathConstants<float>::pi * 1.25f;
     static constexpr float kRotaryEnd = juce::MathConstants<float>::pi * 2.75f;
+
+private:
+    /** Keeps the shared text metrics and control bodies alive while this editor exists. */
+    juce::SharedResourcePointer<SharedUiCaches> caches;
 };
 
 } // namespace arc::ui

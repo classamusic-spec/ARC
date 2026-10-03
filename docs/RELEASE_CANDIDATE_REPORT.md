@@ -166,14 +166,23 @@ Results:
   with a machined-silver chassis, raised plates, a recessed preset tray and a chrome
   chamber bezel. Everything is drawn procedurally from one token set, and the embedded
   Jost type is used in tracked small caps. The silver share matches the reference
-  (66.7 % vs 67.7 % of pixels). A final measured contrast pass brought the silver tone,
-  label ink, knob bezels and tile outlines toward the reference while keeping ARC's
-  cleaner finish.
+  (66.3 % vs 67.7 % of pixels). A measured contrast pass brought the silver tone, label
+  ink, knob bezels and tile outlines toward the reference while keeping ARC's cleaner
+  finish.
+* **Finish (Phase 17).** Knobs have an engraved track with a luminous value arc, a
+  turned chrome ring and an anodized cap, rendered per pixel at device resolution and
+  cached. FREEZE / RANDOM / SYNC are machined key caps. Selector tiles carry status
+  LEDs. The meter is a pair of recessed slim bars with a continuous signal-light fill.
+  The satin brushing is seamless and finer, and the glass surfaces have soft sheens
+  instead of gloss bands. No label is ever cut: text that does not fit shrinks, and
+  switch segments are sized to their labels.
 * **Resonance Field.** The largest element (28 % of the canvas). Nodes sit at their DSP
   positions (parameters plus live motion), and the connections are the active
   topology's edges weighted by the coupling in use. Halos, flows, strike rings, frost,
   tremor and ring spacing are driven by telemetry (energy, edge flux, strikes, FREEZE,
-  CHAOS, TENSION). The chamber header doubles as the help caption.
+  CHAOS, TENSION). The chamber header doubles as the help caption. At rest the chamber
+  shows only its title and live readouts; interaction hints appear while the mouse is
+  in it, and the settings and preset cards dim it.
 * **Node interactions.**
   * Drag to move and retune (Shift = fine); the node lands 0.04 px from the pointer.
   * Double-click to reset.
@@ -182,7 +191,7 @@ Results:
 * **Contextual inspectors.**
   * Exciter / material detail inside the side panels.
   * Node card: RATIO / DECAY / DAMP / LEVEL / PAN / LINK, REC / LOOP / clear.
-  * CORE card: topology, QUANTIZE, SPACE / WIDTH / DRIVE.
+  * CORE card: topology, QUANTIZE, SPACE / WIDTH / DRIVE / LEVEL.
   * Settings: voice mode, MPE, voices, glide, bend, release, quality, window size.
   * Preset browser: categories, favourites, audition, save, delete.
   * Cards dock in whichever band is less crowded so they never cover the CORE.
@@ -194,7 +203,8 @@ Results:
   pixel density (snapshots at 2×).
 
 Screenshots: `docs/images/` (main, node inspector, CORE inspector, settings, preset
-browser, 2× frozen, and the Linux Standalone window).
+browser and search, 2× frozen, every control state at 2×, and the Linux Standalone
+window).
 
 ## PERFORMANCE MEASUREMENTS
 
@@ -228,37 +238,45 @@ cents), and switching live is click-free.
 **Sample rates.** Every rate from 22.05 to 192 kHz sounds and stays finite, including
 re-preparing mid-session. At 96 kHz, 16 voices cost 16.5 / 20.0 %.
 
-**GUI load.** Software renderer, 8 bowed voices, editor at 1200 × 900:
-* Audio thread: 8.8 % of a core with the editor closed, 8.9 % with it open and animating
-  at 60 fps (no effect).
-* Message thread: 3.0 ms per frame for the regions the editor repaints (17.8 % of one
-  core at 60 fps).
-* Field frame at 2× density: 4.4–4.5 ms. Full-window repaint (open / resize): 9.4 ms.
+**GUI load.** Software renderer, 8 bowed voices, editor at 1200 × 900, after the Phase 17
+finish pass (three runs each; the shared machine drifts between sessions, so UI_SYSTEM §7
+gives the same-day before / after):
+* Audio thread: 10.7–12.0 % of a core with the editor closed, 12.3–12.8 % with it open
+  and animating at 60 fps. Runs vary by about ±1.5 % either way: no measurable effect.
+* Message thread: 3.9–4.2 ms per frame for the regions the editor repaints (22–24 % of
+  one core at 60 fps).
+* Field frame at 2× density: 5.1–5.9 ms. Full-window repaint (open / resize): 9.6–9.8 ms
+  (one run 15.0 ms). Preset sheet, full paint: 5.1–6.2 ms.
 * Idle: 15 fps.
 
 ## TESTING
 
 **Tests actually run** (all on this build):
-* Release suite: **90 tests, 1004 checks, 0 failures** (103 s), after the Phase 16
-  preset library. Groups:
+* Release suite: **92 tests, 1013 checks, 0 failures** (115 s), after the Phase 17 UI
+  finish pass. Groups:
   resonator 11, network 11, exciters 6, tuning 8, materials 4, soundcheck 1, voices 10,
   motion / gesture / chaos / freeze / nonlinear 10, presets / random / state 9,
-  library 2, performance 3, realtime 2, host 4, ui 7, smoke / docs 2.
-* AddressSanitizer + UndefinedBehaviorSanitizer, on the Phase 16 code: the **full suite**
-  (90 tests, 1003 checks, 531 s, including the 396-preset audit). **No reports.** (At the
-  release candidate: 86 tests, 939 checks, no reports.)
-* ThreadSanitizer, on the Phase 16 code: 19 threaded tests. They cover realtime
-  concurrency, host, state, preset switching and per-note trims, the library audit
-  rendering on four worker threads (PADS, 36 presets), the editor at 60 fps against live
-  audio, the selector tiles and the preset browser. **No race reports.** One check failed
-  there: the browser's new paint-time limit, which was not yet exempt in sanitizer builds
-  (85 ms under TSan, 4 ms in Release). It is now measured but not enforced in sanitizer
-  builds, like every other timing check.
+  library 2, performance 3, realtime 2, host 4, ui 9, smoke / docs 2.
+* AddressSanitizer + UndefinedBehaviorSanitizer (leak detection on), on the Phase 17
+  code: the **full suite** (90 tests, 1007 checks, 524 s, including the 396-preset
+  audit). **No reports.** After the pass's last changes, the UI group and the preset
+  tests were run again under it: 14 tests, 115 checks, **no reports**. (Phase 16: 90 tests, 1003 checks; release
+  candidate: 86 tests, 939 checks; no reports.)
+* ThreadSanitizer, on the Phase 17 code: 28 tests (realtime concurrency, host, state,
+  preset switching and per-note trims, the library audit on four worker threads (PADS,
+  36 presets), and the whole UI group: the editor at 60 fps against live audio, the
+  tiles, the browser, the control sheet). **No race reports.** After the pass's last
+  changes: the same 28 tests, 184 checks, **no race reports**.
+* An AddressSanitizer + UBSan build of the plugin itself, loaded into pluginval
+  (strictness 10, GUI on, the sanitizer runtimes preloaded into pluginval), twice:
+  **SUCCESS, no reports**, through whole sessions including the plugin's unload.
 * Allocation detector: **0 allocations** on the audio thread in 640 blocks, with MIDI,
   preset / gesture changes and structural automation.
 
 **Results.** Every quality-gate criterion passes (CORE_QUALITY_GATE). The suite found
-real defects that were fixed:
+real defects that were fixed (the last two in Phase 17: an out-of-range read in one
+test's own measurement windows, and a 30 ms blurred shadow in the UI, caught by the
+browser's paint-time check):
 * a coupling-compensation limit cycle;
 * non-collocated feedback forces;
 * a bow playability hole;
@@ -276,13 +294,13 @@ copies are kept in `docs/measurements/`.
 
 | Validator / check | Result |
 |---|---|
-| pluginval 1.0.4, strictness 10, in-process, GUI tests on (VST3) | **SUCCESS**: 25 test groups, including editor, editor while processing, editor automation, state and state restoration, background-thread state, parameter thread safety, fuzzing, bus layouts, and audio at 44.1 / 48 / 96 kHz × 64–1024 blocks |
+| pluginval 1.0.4, strictness 10, in-process, GUI tests on (VST3) | **SUCCESS**: 25 test groups, including editor, editor while processing, editor automation, state and state restoration, background-thread state, parameter thread safety, fuzzing, bus layouts, and audio at 44.1 / 48 / 96 kHz × 64–1024 blocks. On the Phase 17 build: SUCCESS in every run (25 at strictness 10). In 2 of them pluginval itself then crashed while exiting, in its own Linux VST3 run loop (pluginval 1.0.4 is built with JUCE 8.0.3), with no ARC code on the stack (DEVELOPMENT_LOG, Phase 17) |
 | Steinberg VST3 validator (VST3 SDK 3.8, built from source) | **47 / 47** standard tests; **537 / 537** extensive (`-e -l`); also exit 0 as pluginval's validator step (bundle-path wrapper, see TESTING) |
 | Instantiation, destruction, editor open / close, MIDI, state, automation | pass (pluginval + `host` tests) |
 | Sample-rate changes, block-size changes | pass: 22.05–192 kHz; blocks 1–4096 bit-identical |
 | Multiple instances | pass: isolated (difference 0) |
-| Bypass, preset switching | pass: bypass outputs silence and processing continues cleanly afterwards; 94 preset switches under load, peak −7 dB |
-| Standalone launch (Xvfb) | pass: window up in 3.8 s, editor fully rendered, alive until closed (`docs/images/arc_standalone_linux.jpg`). There is no audio or MIDI device in the container, as expected |
+| Bypass, preset switching | pass: bypass outputs silence and processing continues cleanly afterwards; 94 preset switches under load, peak −2.6 dB (the safety clip starts at −3 dBFS) |
+| Standalone launch (Xvfb) | pass: window up in under 0.3 s (3.8 s at the release candidate, from a cold disk), editor fully rendered, alive until closed (`docs/images/arc_standalone_linux.jpg`). There is no audio or MIDI device in the container, as expected |
 | AU / auval, macOS, Windows, real DAWs | **UNVERIFIED — ENVIRONMENT LIMITATION** |
 
 ## QUALITY GATES
@@ -313,8 +331,9 @@ Only issues that are genuinely unresolved in this build:
    stay within 0.3 cents.
 3. **MEMBRANE + AIR plays 6–8 cents sharp** (C3), from the membrane's energy-dependent
    tuning, which the sustained-exciter intonation tracker does not fully cancel.
-4. **GUI cost was measured only with JUCE's software renderer** (Linux): 3.0 ms per
-   frame at 1×, 4.5 ms for the field at 2×, and a 9.4 ms full-window repaint on resize.
+4. **GUI cost was measured only with JUCE's software renderer** (Linux): 3.9–4.2 ms per
+   frame at 1×, 5.1–5.9 ms for the field at 2×, and a 9.6–9.8 ms full-window repaint on
+   resize.
    CoreGraphics (macOS) and Direct2D (Windows) timing and appearance are unmeasured.
 5. **The Standalone app's window chrome and audio / MIDI settings dialog** are JUCE's
    standard ones, not ARC-styled.

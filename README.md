@@ -20,6 +20,10 @@ of the instrument, where you can see it, touch it, retune it and make it move.
 * **Playing:** 16 voices (default 8), poly / mono / legato, MPE, sustain, aftertouch.
   396 factory presets in 12 categories, every one measured for level, tuning, category
   and uniqueness ([PRESETS](docs/PRESETS.md)); type-to-search browser. Full session recall.
+* **Interface:** one screen of machined silver around the live Resonance Field: turned-metal
+  knobs with luminous value arcs, contextual glass inspectors, and help in the chamber's
+  caption instead of permanent labels. Resizable 75–150 %, rendered natively at HiDPI
+  ([UI_SYSTEM](docs/UI_SYSTEM.md)).
 * **Formats:** VST3 and Standalone (AU on macOS). C++20, JUCE 8.
 
 ## Build
@@ -56,7 +60,7 @@ CMake options:
 ## Test and validate
 
 ```bash
-./build/ARCTests_artefacts/Release/ARCTests            # 90 tests: DSP, network, exciters, materials,
+./build/ARCTests_artefacts/Release/ARCTests            # 92 tests: DSP, network, exciters, materials,
                                                        # voices, motion, presets, the 396-preset library
                                                        # audit, state, realtime, host
 xvfb-run -a ./build/ARCTests_artefacts/Release/ARCTests ui   # editor tests on a headless Linux machine

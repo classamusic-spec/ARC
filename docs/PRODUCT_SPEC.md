@@ -151,11 +151,14 @@ each keeping the composition:
    allows MOTION as a contextual secondary control, so it is a small knob with a
    rate / division readout. The four macros stay large and central.
 2. **Live status in the right corner.** The reference's "RESONANCE CONNECTS
-   EVERYTHING" motto is replaced by voice mode, voices sounding and CPU (or host BPM
-   under SYNC), with the same visual weight.
+   EVERYTHING" motto is replaced by three quiet readouts with the same visual weight:
+   VOICES (sounding / polyphony, or MONO / LEGATO), CPU, and the host TEMPO (lit while
+   SYNC follows it).
 3. **The chamber readouts are real.** STABILITY, FLOW and HARMONICS are driven by CHAOS,
    measured edge flow and node-ratio harmonicity. The right-hand text shows the
-   hovered node's ratio and level, or interaction hints.
+   hovered or selected node's ratio and level, or the CORE. Interaction hints, and the
+   reference's "DRAG NODES · SHAPE RESONANCE · CREATE MOTION" line, appear only while
+   the mouse is in the chamber.
 4. **Settings gear in the header**, for the settings card (the reference has no
    settings access).
 

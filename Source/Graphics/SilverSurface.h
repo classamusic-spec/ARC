@@ -13,8 +13,9 @@ namespace arc::gfx
 /** Superellipse ("squircle") outline — the shape of the resonance chamber. */
 juce::Path superellipse (juce::Rectangle<float> r, float exponent, int segments = 160);
 
-/** Fine horizontal brushing, tiled over silver surfaces at low alpha. */
-const juce::Image& brushedTexture();
+/** Fine horizontal brushing, tiled over silver surfaces at low alpha (generated once
+    while an editor is open; see arc::ui::SharedUiCaches). */
+juce::Image brushedTexture();
 
 /** Full chassis: satin gradient, brushing, soft top light, outer frame bevel. */
 void paintChassis (juce::Graphics& g, juce::Rectangle<float> bounds, float cornerRadius);

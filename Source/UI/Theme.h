@@ -8,6 +8,8 @@
 // trace of violet are secondary energy colours; amber is reserved for recording.
 
 #include <cmath>
+#include <unordered_map>
+#include <vector>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -95,10 +97,35 @@ inline float easeOutCubic (float t) noexcept
     return 1.0f - u * u * u;
 }
 
+/**
+    The UI's shared caches: measured text widths, the rendered bodies of knobs and keys,
+    and the satin brushing tile. Take one with juce::SharedResourcePointer. Each editor's
+    look-and-feel holds a reference, so the caches live while an editor is open and are
+    released with the last one: never at library unload, when the platform's image
+    resources (Direct2D on Windows) may already be gone.
+*/
+struct SharedUiCaches
+{
+    struct Body
+    {
+        int kind = 0, diameter = 0;
+        juce::Image image;
+    };
+
+    juce::SpinLock lock;
+    std::unordered_map<juce::String, float> textWidths;
+    std::vector<Body> bodies; // least recently used first
+    juce::Image brushed;
+};
+
 /** Width of a single line of text in `font` (tracking included). */
 float textWidth (const juce::Font& font, const juce::String& text);
 
-/** Draws text with explicit letter spacing, centred or left-aligned in `area`. */
+/** `font` reduced in height (not below minHeight) until `text` fits in maxWidth. */
+juce::Font fitFont (juce::Font font, const juce::String& text, float maxWidth, float minHeight);
+
+/** Draws text with explicit letter spacing, centred or left-aligned in `area`; text too
+    wide for the area shrinks to fit (never below 70 % of the requested size). */
 void drawTrackedText (juce::Graphics& g, const juce::String& text, juce::Rectangle<float> area, const juce::Font& font,
                       juce::Justification just);
 

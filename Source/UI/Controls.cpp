@@ -7,6 +7,23 @@ namespace arc::ui
 
 juce::String percent (double v) { return juce::String (juce::roundToInt (v * 100.0)) + " %"; }
 
+namespace
+{
+/** Soft light around a shape from a few widening strokes, drawn before the shape itself
+    (which covers their inner halves). No blur: a blurred shadow costs about a millisecond
+    per paint, and lit controls repaint while they animate. */
+void paintGlow (juce::Graphics& g, const juce::Path& shape, juce::Colour c, float strength)
+{
+    constexpr int steps = 6;
+    for (int i = steps; i >= 1; --i)
+    {
+        const float k = (float) i / (float) steps;
+        g.setColour (c.withAlpha (strength * 0.16f * (1.0f - k) * (1.0f - k) + strength * 0.012f));
+        g.strokePath (shape, juce::PathStrokeType (2.0f + 12.0f * k));
+    }
+}
+} // namespace
+
 // ---------------------------------------------------------------------------------------
 IndexAttachment::IndexAttachment (juce::RangedAudioParameter& p, std::function<void (int)> onParameterChange, juce::UndoManager* um)
     : param (p),
@@ -93,38 +110,40 @@ void SelectorTile::setSelectedState (bool s)
 
 void SelectorTile::paintButton (juce::Graphics& g, bool over, bool down)
 {
-    auto r = getLocalBounds().toFloat().reduced (1.5f);
+    auto r = getLocalBounds().toFloat().reduced (2.0f);
     const float radius = juce::jmin (10.0f, r.getHeight() * 0.2f);
     if (down)
         r = r.translated (0.0f, 0.6f);
 
     if (selected)
     {
-        // Outer cyan halo
-        for (int i = 3; i >= 1; --i)
-        {
-            g.setColour (colours::cyan.withAlpha (0.05f * (float) i));
-            g.drawRoundedRectangle (r.expanded ((float) (4 - i) * 1.2f), radius + (float) (4 - i), 1.6f);
-        }
+        // Lit from within: soft cyan bloom, graphite face, one crisp cyan edge.
+        juce::Path shape;
+        shape.addRoundedRectangle (r, radius);
+        paintGlow (g, shape, colours::cyan, over ? 1.25f : 1.0f);
         juce::ColourGradient face (colours::graphiteHigh, r.getX(), r.getY(), colours::chamber, r.getX(), r.getBottom(), false);
         g.setGradientFill (face);
-        g.fillRoundedRectangle (r, radius);
-        // Inner top sheen, fading down
-        g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (0.08f), r.getX(), r.getY(),
+        g.fillPath (shape);
+        g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (0.07f), r.getX(), r.getY(),
                                                  juce::Colours::white.withAlpha (0.0f), r.getX(), r.getCentreY(), false));
-        g.fillRoundedRectangle (r.reduced (2.0f), radius - 1.0f);
-        g.setColour (colours::cyan.withAlpha (over ? 1.0f : 0.85f));
-        g.drawRoundedRectangle (r, radius, 1.3f);
+        g.fillRoundedRectangle (r.reduced (1.5f), radius - 1.0f);
+        g.setColour (colours::cyan.withAlpha (over ? 1.0f : 0.9f));
+        g.drawRoundedRectangle (r, radius, 1.2f);
     }
     else
     {
-        juce::ColourGradient face (colours::panelFace.brighter (over ? 0.16f : 0.1f), r.getX(), r.getY(),
-                                   colours::panelFaceLow.brighter (over ? 0.06f : 0.0f), r.getX(), r.getBottom(), false);
+        // Raised satin key: a soft shadow below, top lip catching the light.
+        g.setColour (juce::Colour (0xff3a4048).withAlpha (0.08f));
+        g.fillRoundedRectangle (r.translated (0.0f, 2.0f).expanded (0.5f), radius + 0.5f);
+        g.setColour (juce::Colour (0xff3a4048).withAlpha (0.1f));
+        g.fillRoundedRectangle (r.translated (0.0f, 1.0f), radius);
+        juce::ColourGradient face (colours::panelFace.brighter (over ? 0.17f : 0.12f), r.getX(), r.getY(),
+                                   colours::panelFaceLow.brighter (over ? 0.07f : 0.02f), r.getX(), r.getBottom(), false);
         g.setGradientFill (face);
         g.fillRoundedRectangle (r, radius);
-        g.setColour (juce::Colours::white.withAlpha (0.75f));
+        g.setColour (juce::Colours::white.withAlpha (0.8f));
         g.drawRoundedRectangle (r.reduced (1.0f).translated (0.0f, 0.5f), radius - 1.0f, 1.0f);
-        g.setColour ((over ? colours::inkMuted : colours::bevelDark).withAlpha (0.9f));
+        g.setColour ((over ? colours::inkFaint : colours::bevelDark).withAlpha (over ? 0.9f : 0.75f));
         g.drawRoundedRectangle (r, radius, 1.0f);
     }
 
@@ -141,10 +160,28 @@ void SelectorTile::paintButton (juce::Graphics& g, bool over, bool down)
     }
     gfx::drawIcon (g, icon, iconArea, iconColour, selected ? 1.5f : 1.3f);
 
-    auto textArea = r.withLeft (iconArea.getRight() + juce::jmax (12.0f, r.getWidth() * 0.1f));
+    auto textArea = r.withLeft (iconArea.getRight() + juce::jmax (12.0f, r.getWidth() * 0.1f)).withTrimmedRight (30.0f);
     g.setColour (selected ? colours::glassText : colours::ink);
     drawTrackedText (g, getName().toUpperCase(), textArea, Fonts::label (juce::jlimit (10.0f, 13.5f, h * 0.25f)),
                      juce::Justification::centredLeft);
+
+    // Status LED.
+    const auto led = juce::Point<float> (r.getRight() - juce::jmax (14.0f, h * 0.3f), r.getCentreY());
+    if (selected)
+    {
+        g.setGradientFill (juce::ColourGradient (colours::cyan.withAlpha (0.55f), led.x, led.y, colours::cyan.withAlpha (0.0f),
+                                                 led.x + 7.0f, led.y, true));
+        g.fillEllipse (juce::Rectangle<float> (14.0f, 14.0f).withCentre (led));
+        g.setColour (colours::cyanBright);
+        g.fillEllipse (juce::Rectangle<float> (4.6f, 4.6f).withCentre (led));
+    }
+    else
+    {
+        g.setColour (juce::Colours::white.withAlpha (0.85f));
+        g.fillEllipse (juce::Rectangle<float> (4.6f, 4.6f).withCentre (led.translated (0.0f, 0.7f)));
+        g.setColour (colours::inkFaint.withAlpha (0.55f));
+        g.fillEllipse (juce::Rectangle<float> (4.6f, 4.6f).withCentre (led));
+    }
 }
 
 // ---------------------------------------------------------------------------------------
@@ -159,33 +196,31 @@ void RoundButton::paintButton (juce::Graphics& g, bool over, bool down)
     const auto b = getLocalBounds().toFloat();
     const float labelH = 22.0f;
     const float d = juce::jmin (b.getWidth(), b.getHeight() - labelH) - 12.0f; // room for the shadow
-    auto circle = juce::Rectangle<float> (d, d).withCentre ({ b.getCentreX(), b.getY() + 4.0f + d * 0.5f });
+    const auto circle = juce::Rectangle<float> (d, d).withCentre ({ b.getCentreX(), b.getY() + 4.0f + d * 0.5f });
     const bool on = getToggleState() || activity > 0.05f;
     const float glow = juce::jmax (getToggleState() ? 1.0f : 0.0f, activity);
 
-    gfx::paintContactShadow (g, circle.expanded (d * 0.07f).translated (0.0f, d * 0.05f), 0.3f);
-    if (glow > 0.0f)
-        for (int i = 3; i >= 1; --i)
-        {
-            g.setColour (colours::cyan.withAlpha (0.07f * (float) i * glow));
-            g.drawEllipse (circle.expanded ((float) (4 - i) * 1.6f), 2.0f);
-        }
+    if (glow > 0.01f)
+    {
+        // Engaged: the key glows from its seat.
+        juce::Path disc;
+        disc.addEllipse (circle);
+        paintGlow (g, disc, colours::cyan, 1.3f * glow);
+    }
+    ArcLookAndFeel::paintKeyCap (g, circle, down);
+    const auto face = circle.reduced (d * 0.065f);
+    if (over && ! down)
+    {
+        g.setColour (juce::Colours::white.withAlpha (0.14f));
+        g.fillEllipse (face);
+    }
+    if (on)
+    {
+        g.setColour (colours::cyan.withAlpha (0.45f + 0.55f * glow));
+        g.drawEllipse (face, 1.3f);
+    }
 
-    // Silver rim
-    juce::ColourGradient rim (juce::Colour (0xfff8f9fa), circle.getX(), circle.getY(), juce::Colour (0xff939aa2), circle.getRight(),
-                              circle.getBottom(), false);
-    g.setGradientFill (rim);
-    g.fillEllipse (circle);
-    // Face
-    const auto face = circle.reduced (d * 0.07f);
-    juce::ColourGradient fg (down ? colours::panelFaceLow : colours::panelFace.brighter (over ? 0.18f : 0.12f), face.getX(), face.getY(),
-                             down ? colours::panelFace.brighter (0.05f) : colours::panelFaceLow, face.getX(), face.getBottom(), false);
-    g.setGradientFill (fg);
-    g.fillEllipse (face);
-    g.setColour (on ? colours::cyan.withAlpha (0.4f + 0.6f * glow) : colours::bevelDark.withAlpha (0.8f));
-    g.drawEllipse (face, on ? 1.4f : 0.9f);
-
-    const auto iconArea = face.reduced (d * 0.25f);
+    const auto iconArea = face.reduced (d * 0.24f).translated (0.0f, down ? 0.5f : 0.0f);
     if (on)
         gfx::drawIcon (g, icon, iconArea, colours::cyan.withAlpha (0.25f * glow), 3.4f);
     gfx::drawIcon (g, icon, iconArea, on ? colours::cyanDim.interpolatedWith (colours::cyan, glow) : (over ? colours::ink : colours::inkSoft), 1.35f);
@@ -222,11 +257,50 @@ void SegmentedControl::setIndex (int i, bool notify)
     }
 }
 
+SegmentedControl::Layout SegmentedControl::layout() const
+{
+    Layout l;
+    const auto r = getLocalBounds().toFloat().reduced (2.5f);
+    const int n = juce::jmax (1, options.size());
+    // Content-sized segments: a long label (CHAIN, LEGATO) gets the room it needs, short
+    // ones share the rest; the font shrinks only if even that cannot fit.
+    auto font = Fonts::label (juce::jlimit (8.5f, 11.0f, r.getHeight() * 0.5f));
+    std::vector<float> widths ((size_t) n, 0.0f);
+    for (int pass = 0; pass < 12; ++pass)
+    {
+        float total = 0.0f;
+        for (int i = 0; i < n; ++i)
+        {
+            widths[(size_t) i] = textWidth (font, options[i].toUpperCase()) - font.getExtraKerningFactor() * font.getHeight();
+            total += widths[(size_t) i];
+        }
+        const float pad = (r.getWidth() - total) / (float) n;
+        if (pad >= 8.0f || font.getHeight() <= 7.5f)
+        {
+            float x = r.getX();
+            for (int i = 0; i < n; ++i)
+            {
+                const float w = widths[(size_t) i] + juce::jmax (0.0f, pad);
+                l.segments.emplace_back (x, r.getY(), i == n - 1 ? r.getRight() - x : w, r.getHeight());
+                x += w;
+            }
+            break;
+        }
+        font = font.withHeight (font.getHeight() - 0.5f);
+    }
+    l.font = font;
+    return l;
+}
+
 int SegmentedControl::segmentAt (juce::Point<int> p) const
 {
     if (options.isEmpty() || ! getLocalBounds().contains (p))
         return -1;
-    return juce::jlimit (0, options.size() - 1, p.x * options.size() / juce::jmax (1, getWidth()));
+    const auto l = layout();
+    for (size_t i = 0; i < l.segments.size(); ++i)
+        if (p.x < (int) std::ceil (l.segments[i].getRight()))
+            return (int) i;
+    return options.size() - 1;
 }
 
 void SegmentedControl::mouseDown (const juce::MouseEvent& e)
@@ -261,10 +335,10 @@ void SegmentedControl::paint (juce::Graphics& g)
     g.setColour (glass ? colours::graphiteLine : colours::hairline);
     g.drawRoundedRectangle (r, radius, 1.0f);
 
-    const float w = r.getWidth() / (float) juce::jmax (1, options.size());
-    for (int i = 0; i < options.size(); ++i)
+    const auto l = layout();
+    for (int i = 0; i < options.size() && i < (int) l.segments.size(); ++i)
     {
-        auto seg = juce::Rectangle<float> (r.getX() + w * (float) i, r.getY(), w, r.getHeight()).reduced (2.0f);
+        const auto seg = l.segments[(size_t) i];
         const bool sel = i == index;
         if (sel)
         {
@@ -279,8 +353,7 @@ void SegmentedControl::paint (juce::Graphics& g)
             g.fillRoundedRectangle (seg, seg.getHeight() * 0.5f);
         }
         g.setColour (sel ? colours::cyanBright : (glass ? colours::glassMuted : colours::inkSoft));
-        drawTrackedText (g, options[i].toUpperCase(), seg, Fonts::label (juce::jlimit (8.5f, 11.0f, seg.getHeight() * 0.48f)),
-                         juce::Justification::centred);
+        drawTrackedText (g, options[i].toUpperCase(), seg, l.font, juce::Justification::centred);
     }
 }
 

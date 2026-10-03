@@ -28,6 +28,8 @@ public:
     /** Fade / rise animation driven by the editor's clock. */
     void setShown (bool shouldShow);
     bool isShown() const noexcept { return shown; }
+    /** 0..1 eased show amount (drives the chamber's modal dimming). */
+    float getShowAmount() const noexcept { return anim; }
     void advance (float dt);
 
 protected:

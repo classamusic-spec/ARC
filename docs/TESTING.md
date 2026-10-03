@@ -26,7 +26,7 @@ The harness is self-contained (`Tests/ArcTest.h`): `TEST_CASE`, `CHECK` (continu
 `REQUIRE` (abort test), `MEASURE`. `Tests/Analysis.*` holds the signal analysis;
 `Tests/VoiceRig.h` drives a single voice exactly like the engine does.
 
-## Suites (90 tests)
+## Suites (92 tests)
 
 | Group | What it proves |
 |---|---|
@@ -43,7 +43,7 @@ The harness is self-contained (`Tests/ArcTest.h`): `TEST_CASE`, `CHECK` (continu
 | `performance` (3) | CPU by voices × exciter × sample rate × coupling / chaos / motion, QUALITY trade-off, quality modes sound alike and switch live without clicks |
 | `realtime` (2) | **zero allocations** in 640 `processBlock` calls with MIDI, preset / gesture changes and structural automation; audio + message threads concurrently (run under ThreadSanitizer) |
 | `host` (4) | block sizes 1–4096 bit-identical, sample-rate changes 22.05–192 kHz, multiple instances independent, bypass / suspend / editor open-close while processing |
-| `ui` (7) | editor snapshots (all main states, preset search, 2× HiDPI, smallest size), field frame cost, node drag lands under the pointer, Alt-drag gesture recording, tiles / FREEZE / SYNC / RANDOM drive parameters, audio cost with the editor closed vs open at 60 fps (also the ThreadSanitizer race test for editor frames against live audio), preset browser search over the whole library and clip-aware painting (10 rows drawn of 396, 4 ms for the whole sheet) |
+| `ui` (9) | editor snapshots (all main states, preset search, 2× HiDPI, a 150 % display scale, smallest size), a sheet of every control state at 2× (knobs at rest / hover / drag / bipolar / disabled / zero in all four styles, keys at rest / hover / pressed / engaged, tiles), labels keep every letter (text shrinks rather than truncating; a switch sweep selects every option in order), field frame cost, node drag lands under the pointer, Alt-drag gesture recording, tiles / FREEZE / SYNC / RANDOM drive parameters, audio cost with the editor closed vs open at 60 fps (also the ThreadSanitizer race test for editor frames against live audio), preset browser search over the whole library and clip-aware painting (10 rows drawn of 396, 4 ms for the whole sheet) |
 | `smoke`, `docs` (2) | MIDI renders audio; parameter table generated from the live layout |
 
 ## The preset library audit

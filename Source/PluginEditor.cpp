@@ -71,9 +71,24 @@ void MotionRateControl::paint (juce::Graphics& g)
         const float hz = rate.convertFrom0to1 (rate.getValue());
         value = hz < 1.0f ? juce::String (hz, 2) + " HZ" : juce::String (hz, 1) + " HZ";
     }
+    // Label and value as one centred line; hovering reveals the drag well.
     const bool over = isMouseOverOrDragging();
-    g.setColour (over ? colours::cyanDim : colours::inkMuted);
-    drawTrackedText (g, (synced() ? "SYNC  " : "RATE  ") + value, b, Fonts::regular (10.0f, 0.2f), juce::Justification::centred);
+    if (over)
+    {
+        const auto well = b.reduced (2.0f, 1.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.fillRoundedRectangle (well, well.getHeight() * 0.5f);
+        g.setColour (colours::hairline);
+        g.drawRoundedRectangle (well, well.getHeight() * 0.5f, 1.0f);
+    }
+    const auto label = juce::String (synced() ? "SYNC" : "RATE");
+    const auto labelFont = Fonts::label (8.5f), valueFont = Fonts::regular (10.5f, 0.12f);
+    const float lw = textWidth (labelFont, label), vw = textWidth (valueFont, value) - valueFont.getExtraKerningFactor() * valueFont.getHeight();
+    const float x = b.getCentreX() - (lw + 4.0f + vw) * 0.5f;
+    g.setColour (colours::inkMuted);
+    drawTrackedText (g, label, { x, b.getY(), lw, b.getHeight() }, labelFont, juce::Justification::centredLeft);
+    g.setColour (over ? colours::cyanDim.darker (0.25f) : colours::ink);
+    drawTrackedText (g, value, { x + lw + 4.0f, b.getY(), vw + 2.0f, b.getHeight() }, valueFont, juce::Justification::centredLeft);
 }
 
 void MotionRateControl::mouseDown (const juce::MouseEvent&)
@@ -120,25 +135,32 @@ void MotionRateControl::mouseDoubleClick (const juce::MouseEvent&)
 // ---------------------------------------------------------------------------------------
 void StatusReadout::paint (juce::Graphics& g)
 {
+    // Three quiet readouts, label over value: voices in use, CPU, host tempo (lit while
+    // SYNC follows it).
     auto& s = processor.getValueTreeState();
-    const juce::StringArray modes { "POLY", "MONO", "LEGATO" };
     const int mode = juce::roundToInt (s.getRawParameterValue (arc::params::voiceMode)->load());
     const int poly = juce::roundToInt (s.getRawParameterValue (arc::params::polyphony)->load());
     const bool synced = s.getRawParameterValue (arc::params::sync)->load() > 0.5f;
-    juce::StringArray lines;
-    lines.add (mode == 0 ? "POLY " + juce::String (poly) : modes[mode]);
-    lines.add (juce::String (model.activeVoices) + (model.activeVoices == 1 ? " VOICE" : " VOICES"));
-    lines.add (synced ? juce::String (juce::roundToInt (model.bpm)) + " BPM" : "CPU " + juce::String (juce::roundToInt (model.cpu * 100.0f)) + " %");
-    auto b = getLocalBounds().toFloat();
-    float y = b.getY();
-    for (auto& l : lines)
+    struct Item
     {
-        g.setColour (colours::inkSoft);
-        drawTrackedText (g, l, { b.getX(), y, b.getWidth(), 16.0f }, Fonts::regular (10.0f, 0.22f), juce::Justification::centredLeft);
-        y += 18.0f;
+        juce::String label, value;
+        juce::Colour colour;
+    };
+    const std::array<Item, 3> items { {
+        { "VOICES", mode == 0 ? juce::String (model.activeVoices) + " / " + juce::String (poly) : (mode == 1 ? "MONO" : "LEGATO"), colours::ink },
+        { "CPU", juce::String (juce::roundToInt (model.cpu * 100.0f)) + " %", colours::ink },
+        { "TEMPO", juce::String (juce::roundToInt (model.bpm)) + " BPM", synced ? colours::cyanDim.darker (0.25f) : colours::ink },
+    } };
+    auto b = getLocalBounds().toFloat();
+    const float itemH = b.getHeight() / 3.0f;
+    for (auto& item : items)
+    {
+        auto r = b.removeFromTop (itemH);
+        g.setColour (colours::inkMuted);
+        drawTrackedText (g, item.label, r.removeFromTop (11.0f), Fonts::label (8.5f), juce::Justification::centredLeft);
+        g.setColour (item.colour);
+        drawTrackedText (g, item.value, r.removeFromTop (17.0f), Fonts::light (14.5f, 0.04f), juce::Justification::centredLeft);
     }
-    g.setColour (colours::cyan.withAlpha (0.7f));
-    g.fillRect (b.getX(), y + 8.0f, 42.0f, 1.2f);
 }
 
 } // namespace arc::ui
@@ -444,6 +466,9 @@ void ArcAudioProcessorEditor::advanceFrame (double dtSeconds)
     material.advance (dt);
     for (auto* card : std::initializer_list<GlassCard*> { &nodeInspector, &coreInspector, &settings, &browser })
         card->advance (dt);
+    // Modal cards dim the chamber behind them; the inspector dock does not (the network
+    // stays visible and playable while it is inspected).
+    field.setModalDim (juce::jmax (settings.getShowAmount(), browser.getShowAmount()));
     freeze.setActivity (model.freeze);
 
     if ((++frameCounter % 6) == 0)

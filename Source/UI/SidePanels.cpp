@@ -108,8 +108,8 @@ void SelectorPanel::layoutContent()
     const float t = easeOutCubic (openAnim);
     const int left = 26, right = b.getWidth() - 30;
     const int top = 118;
-    const float tileH = juce::jmap (t, 55.0f, 40.0f);
-    const float gap = juce::jmap (t, 11.0f, 6.0f);
+    const float tileH = juce::jmap (t, 58.0f, 40.0f);
+    const float gap = juce::jmap (t, 12.0f, 6.0f);
     float y = (float) top;
     for (auto& tile : tiles)
     {

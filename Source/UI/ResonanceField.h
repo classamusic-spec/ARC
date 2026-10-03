@@ -73,10 +73,15 @@ public:
     /** Advance animations by dt seconds (called by the editor's frame clock). */
     void advance (float dt, bool engineRunning);
 
+    /** 0..1: how far a modal card (settings, presets) has risen over the chamber. The
+        chamber dims and its caption steps back, so nothing peeks out around the card. */
+    void setModalDim (float amount) noexcept { modalDim = juce::jlimit (0.0f, 1.0f, amount); }
+
     void paint (juce::Graphics&) override;
     void resized() override;
     bool hitTest (int x, int y) override;
 
+    void mouseEnter (const juce::MouseEvent&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -133,7 +138,7 @@ private:
 
     Selection selection;
     int hoverNode = -1;
-    bool hoverCore = false;
+    bool hoverCore = false, mouseInside = false;
 
     // Dragging / recording
     int dragNode = -1;
@@ -151,6 +156,8 @@ private:
     std::array<juce::Point<float>, 4> tremor {};
     std::array<juce::Point<float>, 4> tremorTarget {};
     float coreHover = 0.0f, coreSelect = 0.0f;
+    float hintAnim = 0.0f; // interaction hints: shown only while the mouse is in the chamber
+    float modalDim = 0.0f;
     juce::String captionTitle, captionBody, prevTitle, prevBody;
     float captionFade = 1.0f;
     juce::Random rng { 0x5EED };

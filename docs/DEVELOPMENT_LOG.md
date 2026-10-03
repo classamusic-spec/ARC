@@ -484,3 +484,126 @@ in tune. The closest pair is 2.13 (Reed Array / Sheng Cluster).
   now counts folds instead of comparing floats.
 * Clean rebuild from an empty build directory: 148 steps, 5 min 37 s, 0 warnings.
 
+
+## Phase 17 — UI finish pass: premium materials, a quieter surface (quality gate: PASS)
+
+Request: clean up the UI and give it a premium (AAA) finish. Every state was audited from
+its snapshot: main, node and CORE docks, panel inspectors, settings, browser, search,
+frozen at 2×, the smallest window, and a new sheet of control states. The pass fixed
+the defects, removed permanent clutter and replaced the materials that fell short of
+the rest of the instrument. Layout, behaviour and parameters are unchanged.
+
+**Defects**
+* **"CHAIN" was cut to "CHAI"** in the CORE dock's topology switch: segments were equal
+  widths and text that did not fit was truncated. Segments are now sized to their
+  labels, and `drawTrackedText` never drops letters: text too wide for its area shrinks
+  (to 70 % at most) instead. Test: `ui/labels keep every letter and switch segments
+  follow their labels`.
+* **The settings card left the field caption peeking out beside it** ("DRAG NOD…").
+  The modal cards (settings, presets) now dim the chamber behind them and its caption
+  steps back. The node / CORE dock does not dim it: the network stays playable there.
+* **A disabled knob was drawn at 40 % opacity,** so the panel showed through its cap.
+  It now stays solid and recedes under a veil (no knob is disabled in V1, but the
+  painter is shared).
+
+**Clutter removed**
+* The chamber's permanent instruction line and the right-hand hints appear only while
+  the mouse is in the chamber; at rest the caption is the title alone.
+* Crosshair axes (5–20 % opacity) and the inner ring are quieter, so the only bright
+  lines are the network's.
+* The ring junctions were glossy white steel balls, the brightest objects in the chamber
+  after the CORE. They are now smoked-glass beads that light with the ring's flow.
+* The status corner's run-on lines and a stray cyan dash became three label / value
+  readouts: VOICES, CPU, TEMPO.
+
+**Materials**
+* **Knobs.** The dotted "comet" rings (dots swelling toward the value) became an engraved
+  track with a continuous luminous arc and a glowing value point. The bodies are a
+  turned chrome ring (conic reflections from the upper-left key light, concentric
+  turning marks) and an anodized cap, rendered per pixel at device resolution and
+  cached by kind and size (LRU of 32). The seat between ring and cap is anti-aliased.
+* **Keys** (FREEZE / RANDOM / SYNC) are machined caps from the same renderer: pressed
+  reads concave, engaged glows from the seat.
+* **Selector tiles** are raised keys with a soft shadow and a status LED. The selected
+  tile is graphite lit from within (one crisp cyan edge and a soft bloom, instead of
+  three stacked outline rings). The tiles are taller (58 px, 12 px apart), which
+  balances the panels.
+* **Meter**: flat 34-segment bars became slim recessed slots with a continuous
+  signal-light fill (cyan → ice at 0 dBFS → amber above) and fine segmentation; the
+  peak-hold tick turns amber after a clip.
+* **Glass**: the preset display and the cards lost their hard-edged gloss bands for a
+  soft sheen and a lit top edge.
+* **Satin brushing**: the old grain was a random walk per row, with occasional dark
+  runs that read as scratches at 2×. The new tile is built from per-row levels, slow
+  waves whose periods divide the tile and grain smeared by a circular blur, so it wraps
+  exactly. Measured on the plain chassis at 2×, row-to-row streak contrast fell from
+  1.22 to 0.51 grey levels (standard deviation; maximum 2.69 → 1.27). A soft vignette
+  now drops the plate's lower corners out of the key light.
+* **The CORE dock** uses the node dock's layout: title and switches on the left (the
+  topology switch spans the block, QUANTIZE sits beside the title), knobs on the right.
+* **MOTION rate** shows its label and value in two weights, with a drag well on hover.
+
+Colour balance, with the Phase 15 classifier: 66.3 % silver, 32.2 % dark, 1.4 % cyan
+(the reference: 67.7 / 29.3 / 3.0 %; Phase 15: 66.7 / 32.1 / 1.2 %).
+
+**A latent test bug, found by this pass's first full run.** `presets/a preset's level
+trim applies to its own notes only` (Phase 16) failed once in the full suite with
+−490 dB / +679 dB, and passed when run alone. `render()` produces whole blocks only
+(0.6 s gives 0.597 s), and the test's own RMS windows ran up to 256 samples past the
+rendered signal. Those reads stayed inside the vector's capacity, so AddressSanitizer
+could not see them. Alone, that memory held zeros; after a long run it held garbage.
+The test now measures through the bounds-checked `rms` and checks that every window
+lies inside the render; it reads −0.86 dB and 1.15 dB. The tests' other direct sample
+indexing was audited and is in range.
+
+**Measured, not assumed.** The first versions of the new card shadow, tile bloom and
+key glow used blurred drop shadows, which re-blur an image of the shape on every paint:
+the preset sheet's full paint rose from about 5 ms to 35 ms (the browser test allows
+40), a selected tile cost 1.3 / 2.0 ms (1× / 2×), an engaged key 0.4 / 1.0 ms (FREEZE
+repaints every frame while it glows). The full suite's measurements caught it. Cards
+now use a rectangle shadow, and glows are a few widening strokes under the shape: the
+sheet paints in 5.1–6.2 ms (4.3–6.0 before the pass), a selected tile in 0.4 / 0.9 ms,
+an engaged key in 0.17 / 0.33 ms. FREEZE repaints only when its glow changes, cards only when their title
+changes, and measured label widths are cached (shaping text is the costly part of
+measuring it in JUCE 8).
+
+Frame cost, before / after the pass on the same day (three runs each, Release, software
+renderer): field frame at 2× 5.2–6.4 / 5.1–5.9 ms; the dirty regions of a frame at 1×
+3.6–3.8 / 3.9–4.2 ms (budget 8 ms); full-window repaint 10.4–12.1 / 9.6–9.8 ms (one run
+15.0 ms); audio thread unaffected (10.7–13.5 % of a core across runs, open or closed).
+
+**Cache lifetime.** The knob and key bodies, the measured text widths and the satin
+tile are shared caches. They first lived in function-local statics, which outlive every
+editor and are destroyed only when the library unloads. On Linux, images are plain
+memory, but on Windows JUCE 8 backs them with Direct2D and on macOS with CoreGraphics,
+whose resources should not be released after the plugin's JUCE runtime has shut down.
+They now live in one `SharedUiCaches` object, taken through `juce::SharedResourcePointer`
+and held by each editor's look-and-feel: built while an editor is open, released with
+the last one.
+
+**pluginval's exit crash is pluginval's.** pluginval (strictness 10, in process, GUI)
+printed SUCCESS in every run on the Phase 17 build, but in 2 of 25 runs pluginval itself
+then crashed while exiting (SIGSEGV). A core from the second one shows the fault in
+pluginval's own VST3 hosting code (pluginval 1.0.4, built with JUCE 8.0.3): its Linux
+`RunLoop::Impl` dispatches a file-descriptor callback, from its message loop, through a
+`this` that has already been destroyed. No ARC code is on the stack. The plugin's part
+is the standard JUCE VST3 wrapper registering its editor's event handler with the
+host's run loop. An AddressSanitizer + UBSan build of the plugin, run inside pluginval
+(strictness 10, twice, the sanitizer runtimes preloaded into pluginval), checks ARC's own
+code through whole sessions, unload included: SUCCESS, no reports.
+
+**Validation of the Phase 17 code**
+* Release suite: 92 tests, 1013 checks, 0 failures (115 s).
+* AddressSanitizer + UBSan, full suite with leak detection: 90 tests, 1007 checks, 524 s,
+  no reports. After the pass's last changes (the glows, the cache lifetime), the UI group
+  and the preset tests again: 14 tests, 115 checks, no reports.
+* ThreadSanitizer: 28 tests (realtime, host, state, preset switching and trims, the
+  library audit on four worker threads, the whole UI group), 184 checks, no race
+  reports; the same again after the last changes.
+* pluginval 1.0.4, strictness 10, in process with GUI and its VST3-validator step:
+  SUCCESS in every run (see above for pluginval's own exit crash). The ASan + UBSan build
+  of the plugin inside pluginval: SUCCESS twice, no reports.
+* Steinberg VST3 validator: 47 / 47 standard and 537 / 537 extensive tests.
+* Release build of the VST3 and the Standalone: 0 warnings. The Standalone opens its
+  window in under 0.3 s under Xvfb and renders the new editor
+  (`docs/images/arc_standalone_linux.jpg`).

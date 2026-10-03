@@ -1,7 +1,7 @@
 # ARC — Core Quality Gate
 
 Status of every gate at the V1.0 release candidate. Each verdict rests on tests that
-were **run** on this build (`Tests/`, 90 tests / 1004 checks, all passing in Release),
+were **run** on this build (`Tests/`, 92 tests / 1013 checks, all passing in Release),
 on sanitizer builds, and on pluginval. Anything that could not be tested in this
 environment is marked **UNVERIFIED — ENVIRONMENT LIMITATION**. Detailed measurements are
 in the linked documents and in `docs/measurements/`.
@@ -101,14 +101,16 @@ in the linked documents and in `docs/measurements/`.
 
 All fifteen UI quality gate criteria pass:
 
-* Layout matches the reference, silver dominates (66.7 % vs 67.7 %), the chamber is
+* Layout matches the reference, silver dominates (66.3 % vs 67.7 %), the chamber is
   dark, there is no keyboard, and controls are minimal.
 * The field is the largest element. Nodes and connections come from DSP state and
   telemetry, and a drag lands within 0.04 px.
 * There is no generic JUCE styling; rendering and typography are consistent.
-* Animation is smooth: 60 fps, 3.0 ms per frame at 1×, 4.5 ms field frame at 2×.
+* Animation is smooth: 60 fps, 3.9–4.2 ms per frame at 1×, 5.1–5.9 ms field frame at 2×
+  (budgets 8 and 16 ms; Phase 17 finish pass, UI_SYSTEM §7).
 * Resize (900–1800 px) and HiDPI (2× snapshots) work.
-* An open, animating editor does not affect the audio thread (8.8 % vs 8.9 %).
+* An open, animating editor does not affect the audio thread (10.7–13.5 % of a core
+  across runs, open or closed).
 
 UNVERIFIED — ENVIRONMENT LIMITATION: appearance and frame rate on a physical Retina
 or 4K display inside a DAW. There is no display here; the editor ran under Xvfb and
@@ -118,16 +120,16 @@ was judged from rendered snapshots.
 
 | Check | Result |
 |---|---|
-| pluginval 1.0.4, strictness 10, GUI tests on, VST3 | **SUCCESS**: all suites, including editor, automation, state restoration, thread safety, fuzzing, bus layouts and 44.1 / 48 / 96 kHz × 64–1024 blocks |
+| pluginval 1.0.4, strictness 10, GUI tests on, VST3 | **SUCCESS**: all suites, including editor, automation, state restoration, thread safety, fuzzing, bus layouts and 44.1 / 48 / 96 kHz × 64–1024 blocks. Phase 17 build: SUCCESS in every run; pluginval's own exit crashed in 2 of 25 runs inside its Linux VST3 run loop, with no ARC code on the stack. An ASan + UBSan build of the plugin inside pluginval: SUCCESS, no reports |
 | Steinberg VST3 validator (VST3 SDK 3.8) | **47 / 47** standard tests; **537 / 537** extensive tests (`-e -l`); also passes as pluginval's validator step |
 | Instantiation / destruction, editor open / close, MIDI, state, automation | pluginval + `host` tests |
 | Sample-rate changes (22.05 – 192 kHz), block sizes 1 – 4096 | `host` tests: all sound; blocks bit-identical |
 | Multiple instances | `host` tests: isolated (difference 0) |
 | Bypass / suspend | `host` tests; pluginval |
-| Preset switching | switching 94 presets while notes sound: peak −2.6 dB (the safety clip starts at −3 dBFS), no resets; each note keeps its own patch's level trim (a bell's tail moves −0.7 dB across a switch to a +18 dB patch) |
+| Preset switching | switching 94 presets while notes sound: peak −2.6 dB (the safety clip starts at −3 dBFS), no resets; each note keeps its own patch's level trim (a bell's tail moves −0.9 dB across a switch to a +18 dB patch) |
 | Factory library | 396 presets audited: all clean (chord and hard single notes C2 / C4 / C6 below −1 dBFS), level-calibrated, true to category, 289 / 289 pitched presets in tune, closest pair 2.13 ([PRESETS](PRESETS.md)) |
-| AddressSanitizer + UndefinedBehaviorSanitizer (full suite, 90 tests, Phase 16 code) | no reports |
-| ThreadSanitizer (19 threaded tests: audio vs message thread, editor at 60 fps, host, state, preset switching, the library audit on four worker threads) | no reports |
+| AddressSanitizer + UndefinedBehaviorSanitizer (full suite, 90 tests, Phase 17 code, leak detection on; the UI group again after the last changes) | no reports |
+| ThreadSanitizer (28 tests: audio vs message thread, editor at 60 fps, host, state, preset switching, the library audit on four worker threads, the whole UI group; Phase 17 code) | no reports |
 | Allocation detector | 0 allocations on the audio thread |
 | Clean rebuild from an empty build directory | succeeds, 0 warnings |
 | AU build and `auval` | **UNVERIFIED — ENVIRONMENT LIMITATION** (Linux build machine; AU is enabled automatically on macOS) |

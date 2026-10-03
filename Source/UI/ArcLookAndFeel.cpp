@@ -2,6 +2,9 @@
 
 #include "Graphics/SilverSurface.h"
 
+#include <algorithm>
+#include <vector>
+
 namespace arc::ui
 {
 
@@ -37,6 +40,219 @@ KnobStyle ArcLookAndFeel::getKnobStyle (const juce::Slider& s)
     return static_cast<KnobStyle> (static_cast<int> (s.getProperties().getWithDefault (kStyleId, static_cast<int> (KnobStyle::small))));
 }
 
+namespace
+{
+float smoothstep (float edge0, float edge1, float x) noexcept
+{
+    const float t = juce::jlimit (0.0f, 1.0f, (x - edge0) / (edge1 - edge0));
+    return t * t * (3.0f - 2.0f * t);
+}
+
+float hash01 (int i) noexcept
+{
+    auto h = (uint32_t) i * 2654435761u;
+    h ^= h >> 15;
+    h *= 2246822519u;
+    h ^= h >> 13;
+    return (float) (h & 0xffffu) / 65535.0f;
+}
+
+struct KnobGeometry
+{
+    float ringR, faceR, trackR, trackW;
+};
+
+KnobGeometry knobGeometry (KnobStyle style, float outer) noexcept
+{
+    if (style == KnobStyle::macro)
+        return { outer * 0.74f, outer * 0.74f * 0.8f, outer * 0.9f, juce::jmax (2.0f, outer * 0.04f) };
+    if (style == KnobStyle::master)
+        return { outer * 0.72f, outer * 0.72f * 0.76f, outer * 0.895f, juce::jmax (1.8f, outer * 0.06f) };
+    return { outer * 0.72f, outer * 0.72f * 0.76f, outer * 0.895f, juce::jmax (1.6f, outer * 0.064f) };
+}
+
+/** The knob's static body at device resolution: contact shadow, turned chrome ring
+    (conic reflections, concentric turning marks), dark anodized face. Rendered per pixel
+    once per style and size, then blitted 1:1. */
+juce::Image renderKnobBody (KnobStyle style, int ringDiameterPx)
+{
+    const bool glass = style == KnobStyle::glass;
+    const float R = (float) ringDiameterPx * 0.5f;
+    const float faceFrac = style == KnobStyle::macro ? 0.8f : 0.76f;
+    const float extent = glass ? 1.1f : 1.32f; // room for the shadow
+    const int size = (int) std::ceil (R * 2.0f * extent) + 2;
+    juce::Image img (juce::Image::ARGB, size, size, true);
+    juce::Image::BitmapData data (img, juce::Image::BitmapData::writeOnly);
+    const float half = (float) size * 0.5f;
+    const float px = 1.0f / R;           // one device pixel, in ring radii
+    const float keyLight = -0.785f;      // reflections line up with the upper-left key light
+    const float halfPi = juce::MathConstants<float>::halfPi;
+
+    for (int y = 0; y < size; ++y)
+        for (int x = 0; x < size; ++x)
+        {
+            const float dx = ((float) x + 0.5f - half) / R, dy = ((float) y + 0.5f - half) / R;
+            const float r = std::sqrt (dx * dx + dy * dy);
+
+            // Shadow: soft, below (on silver); a tight dark halo on glass.
+            const float sdy = dy - (glass ? 0.05f : 0.12f);
+            const float rs = std::sqrt (dx * dx + sdy * sdy);
+            const float shadow = glass ? 0.32f * smoothstep (1.06f, 0.92f, rs) : 0.4f * smoothstep (1.26f, 0.7f, rs);
+            const float cover = juce::jlimit (0.0f, 1.0f, (1.0f - r) * R + 0.5f);
+            if (cover <= 0.0f && shadow <= 0.002f)
+                continue;
+
+            float L = 0.0f, faceMix = 0.0f;
+            if (cover > 0.0f)
+            {
+                const float theta = std::atan2 (dx, -dy);
+                const float up = -dy; // +1 at the top
+                const float lobe = std::pow (std::abs (std::cos (theta - keyLight)), 10.0f);
+                const float lobe2 = std::pow (std::abs (std::cos (theta - keyLight - halfPi)), 16.0f);
+                const float turning = hash01 ((int) (r * R)) - 0.5f; // concentric marks, 1 px apart
+
+                // Turned chrome ring.
+                const float rp = juce::jmax (0.0f, (r - faceFrac) / (1.0f - faceFrac));
+                const float lip = 1.0f - smoothstep (0.0f, 2.2f * px / (1.0f - faceFrac), rp); // dark seat of the face
+                float ring = glass ? 0.24f + 0.22f * lobe * (0.6f + 0.4f * up) + 0.05f * lobe2 + 0.06f * up
+                                   : 0.6f + 0.32f * lobe * (0.65f + 0.35f * up) + 0.1f * lobe2 + 0.1f * up;
+                ring += (glass ? 0.02f : 0.035f) * turning * (1.0f - lip);
+                ring -= 0.12f * std::pow (rp, 5.0f); // rolls off at the rim
+                ring += 0.12f * juce::jmax (0.0f, up) * smoothstep (0.6f, 0.9f, rp) * (1.0f - smoothstep (0.9f, 1.0f, rp));
+                ring *= 1.0f - 0.8f * lip;
+                ring *= 1.0f - (glass ? 0.3f : 0.45f) * smoothstep (1.0f - 1.5f * px, 1.0f, r); // crisp outer edge
+
+                // Dark anodized face, turned like the ring.
+                const float rf = juce::jmin (1.0f, r / faceFrac);
+                const float edge = smoothstep (1.0f - 3.0f * px / faceFrac, 1.0f, rf);
+                float face = 0.068f + 0.045f * lobe * (0.55f + 0.45f * up);
+                const float hx = dx / (0.62f * faceFrac), hy = (dy + 0.48f * faceFrac) / (0.34f * faceFrac);
+                face += 0.07f * std::exp (-(hx * hx + hy * hy) * 1.6f); // soft top highlight
+                face += 0.016f * turning * (1.0f - edge);
+                face -= 0.035f * std::pow (rf, 8.0f);
+                face += 0.07f * juce::jmax (0.0f, -up) * edge; // lower bevel catches light
+
+                faceMix = juce::jlimit (0.0f, 1.0f, (faceFrac - r) * R + 0.5f); // anti-aliased seat
+                L = ring + (face - ring) * faceMix;
+            }
+            // Body over shadow (ring tinted cool, face a touch bluer).
+            const float tr = 0.965f + (0.92f - 0.965f) * faceMix, tg = 0.98f + (0.97f - 0.98f) * faceMix, tb = 1.0f + 0.08f * faceMix;
+            const float sa = shadow * (1.0f - cover);
+            const float a = cover + sa;
+            const float shade = glass ? 0.0f : 0.17f;
+            const auto c = juce::Colour::fromFloatRGBA (juce::jlimit (0.0f, 1.0f, (L * tr * cover + shade * sa) / a),
+                                                        juce::jlimit (0.0f, 1.0f, (L * tg * cover + shade * 1.08f * sa) / a),
+                                                        juce::jlimit (0.0f, 1.0f, (L * tb * cover + shade * 1.2f * sa) / a), a);
+            data.setPixelColour (x, y, c);
+        }
+    return img;
+}
+
+/** A round machined key (FREEZE / RANDOM / SYNC): chrome bevel around a satin
+    aluminium cap, turned like the knobs; pressed, the cap reads concave. */
+juce::Image renderButtonCap (bool pressed, int diameterPx)
+{
+    const float R = (float) diameterPx * 0.5f;
+    const float capFrac = 0.85f;
+    const int size = (int) std::ceil (R * 2.0f * 1.3f) + 2;
+    juce::Image img (juce::Image::ARGB, size, size, true);
+    juce::Image::BitmapData data (img, juce::Image::BitmapData::writeOnly);
+    const float half = (float) size * 0.5f;
+    const float px = 1.0f / R;
+    const float keyLight = -0.785f;
+    const float halfPi = juce::MathConstants<float>::halfPi;
+    for (int y = 0; y < size; ++y)
+        for (int x = 0; x < size; ++x)
+        {
+            const float dx = ((float) x + 0.5f - half) / R, dy = ((float) y + 0.5f - half) / R;
+            const float r = std::sqrt (dx * dx + dy * dy);
+            const float sdy = dy - (pressed ? 0.06f : 0.12f);
+            const float shadow = (pressed ? 0.3f : 0.36f) * smoothstep (pressed ? 1.12f : 1.24f, 0.72f, std::sqrt (dx * dx + sdy * sdy));
+            const float cover = juce::jlimit (0.0f, 1.0f, (1.0f - r) * R + 0.5f);
+            if (cover <= 0.0f && shadow <= 0.002f)
+                continue;
+            float L = 0.0f;
+            if (cover > 0.0f)
+            {
+                const float theta = std::atan2 (dx, -dy);
+                const float up = -dy;
+                const float lobe = std::pow (std::abs (std::cos (theta - keyLight)), 10.0f);
+                const float lobe2 = std::pow (std::abs (std::cos (theta - keyLight - halfPi)), 14.0f);
+                const float turning = hash01 ((int) (r * R) + 31) - 0.5f;
+
+                // Chrome bevel.
+                const float rp = juce::jmax (0.0f, (r - capFrac) / (1.0f - capFrac));
+                const float lip = 1.0f - smoothstep (0.0f, 2.0f * px / (1.0f - capFrac), rp);
+                float bevel = 0.66f + 0.28f * lobe * (0.65f + 0.35f * up) + 0.12f * up + 0.03f * turning * (1.0f - lip);
+                bevel -= 0.14f * std::pow (rp, 4.0f);
+                bevel *= 1.0f - 0.38f * lip;
+                bevel *= 1.0f - 0.4f * smoothstep (1.0f - 1.5f * px, 1.0f, r);
+
+                // Satin cap.
+                const float rc = juce::jmin (1.0f, r / capFrac);
+                const float tilt = pressed ? -up : up; // pressed: the light falls the other way
+                float cap = (pressed ? 0.75f : 0.8f) + 0.13f * lobe * (0.6f + 0.4f * tilt) + 0.04f * lobe2 + 0.05f * tilt
+                            + 0.018f * turning * (1.0f - smoothstep (1.0f - 3.0f * px / capFrac, 1.0f, rc));
+                const float hx = dx / (0.6f * capFrac), hy = (dy + (pressed ? -0.45f : 0.45f) * capFrac) / (0.35f * capFrac);
+                cap += 0.05f * std::exp (-(hx * hx + hy * hy) * 1.6f);
+                cap -= 0.05f * std::pow (rc, 10.0f);
+
+                L = bevel + (cap - bevel) * juce::jlimit (0.0f, 1.0f, (capFrac - r) * R + 0.5f);
+            }
+            const float sa = shadow * (1.0f - cover);
+            const float a = cover + sa;
+            const auto c = juce::Colour::fromFloatRGBA (juce::jlimit (0.0f, 1.0f, (L * 0.965f * cover + 0.17f * sa) / a),
+                                                        juce::jlimit (0.0f, 1.0f, (L * 0.98f * cover + 0.18f * sa) / a),
+                                                        juce::jlimit (0.0f, 1.0f, (L * cover + 0.2f * sa) / a), a);
+            data.setPixelColour (x, y, c);
+        }
+    return img;
+}
+
+/** Bodies are shared by every control of a kind and size (a few dozen pixels each way);
+    the cache keeps the 32 most recently used, so live resizing cannot grow it.
+    Kinds 0..3 are the knob styles, 4 / 5 the round key cap up / pressed. Returned by
+    value (images are reference counted), so a body outlives the cache if it must. */
+juce::Image bodySprite (int kind, int diameterPx)
+{
+    const juce::SharedResourcePointer<SharedUiCaches> caches;
+    auto& bodies = caches->bodies;
+    {
+        const juce::SpinLock::ScopedLockType sl (caches->lock);
+        for (size_t i = 0; i < bodies.size(); ++i)
+            if (bodies[i].kind == kind && bodies[i].diameter == diameterPx)
+            {
+                if (i + 1 != bodies.size())
+                    std::rotate (bodies.begin() + (std::ptrdiff_t) i, bodies.begin() + (std::ptrdiff_t) i + 1, bodies.end());
+                return bodies.back().image;
+            }
+    }
+    auto image = kind < 4 ? renderKnobBody (static_cast<KnobStyle> (kind), diameterPx) : renderButtonCap (kind == 5, diameterPx);
+    const juce::SpinLock::ScopedLockType sl (caches->lock);
+    if (bodies.size() >= 32)
+        bodies.erase (bodies.begin());
+    bodies.push_back ({ kind, diameterPx, image });
+    return image;
+}
+
+/** Blits a cached body centred on c, 1:1 in device pixels. */
+void blitBody (juce::Graphics& g, int kind, juce::Point<float> c, float diameter, float alpha)
+{
+    const float scale = juce::jmax (1.0f, g.getInternalContext().getPhysicalPixelScaleFactor());
+    const auto body = bodySprite (kind, juce::jmax (8, juce::roundToInt (diameter * scale)));
+    const float x = std::round (c.x * scale - (float) body.getWidth() * 0.5f);
+    const float y = std::round (c.y * scale - (float) body.getHeight() * 0.5f);
+    g.setOpacity (alpha);
+    g.drawImageTransformed (body, juce::AffineTransform::translation (x, y).scaled (1.0f / scale));
+    g.setOpacity (1.0f);
+}
+} // namespace
+
+void ArcLookAndFeel::paintKeyCap (juce::Graphics& g, juce::Rectangle<float> circle, bool pressed)
+{
+    blitBody (g, pressed ? 5 : 4, circle.getCentre(), circle.getWidth(), 1.0f);
+}
+
 void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion, KnobStyle style, bool hover,
                                 bool dragging, bool bipolar, bool enabled)
 {
@@ -45,107 +261,97 @@ void ArcLookAndFeel::paintKnob (juce::Graphics& g, juce::Rectangle<float> bounds
     const auto c = area.getCentre();
     const float outer = area.getWidth() * 0.5f;
     const bool onGlass = style == KnobStyle::glass;
-
-    // Geometry per style: dot ring radius, silver ring radius, face radius.
-    const float dotR = outer * (style == KnobStyle::macro ? 0.93f : 0.92f);
-    const float ringR = outer * (style == KnobStyle::macro ? 0.74f : 0.72f);
-    const float faceR = ringR * (style == KnobStyle::macro ? 0.8f : 0.76f);
-    const int numDots = style == KnobStyle::macro ? 41 : style == KnobStyle::master ? 29 : 23;
-    const float dotSize = outer * (style == KnobStyle::macro ? 0.04f : 0.047f);
+    const auto geo = knobGeometry (style, outer);
     const float alpha = enabled ? 1.0f : 0.4f;
 
-    // --- segmented value arc --------------------------------------------------------
     const float start = kRotaryStart, end = kRotaryEnd;
-    const float valueAngle = start + proportion * (end - start);
+    const float valueAngle = start + juce::jlimit (0.0f, 1.0f, proportion) * (end - start);
     const float centreAngle = start + 0.5f * (end - start);
-    for (int i = 0; i < numDots; ++i)
+    auto onTrack = [&] (float angle, float radius) { return juce::Point<float> (c.x + radius * std::sin (angle), c.y - radius * std::cos (angle)); };
+
+    // --- engraved track ------------------------------------------------------------------
+    const juce::PathStrokeType stroke (geo.trackW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
     {
-        const float t = (float) i / (float) (numDots - 1);
-        const float a = start + t * (end - start);
-        const bool lit = bipolar ? ((a >= juce::jmin (centreAngle, valueAngle) - 1.0e-4f) && (a <= juce::jmax (centreAngle, valueAngle) + 1.0e-4f))
-                                 : a <= valueAngle + 1.0e-4f;
-        const juce::Point<float> p (c.x + dotR * std::sin (a), c.y - dotR * std::cos (a));
-        if (lit)
+        juce::Path track;
+        track.addCentredArc (c.x, c.y, geo.trackR, geo.trackR, 0.0f, start, end, true);
+        if (onGlass)
         {
-            // Brighter near the pointer: energy gathers at the value.
-            const float nearValue = 1.0f - juce::jlimit (0.0f, 1.0f, std::abs (a - valueAngle) / 1.6f);
-            const float glow = (0.35f + 0.65f * nearValue) * alpha;
-            g.setColour (colours::cyan.withAlpha (0.24f * glow));
-            g.fillEllipse (juce::Rectangle<float> (dotSize * 3.4f, dotSize * 3.4f).withCentre (p));
-            g.setColour (colours::cyanBright.interpolatedWith (colours::cyan, 1.0f - nearValue).withAlpha (glow));
-            g.fillEllipse (juce::Rectangle<float> (dotSize * 1.5f, dotSize * 1.5f).withCentre (p));
+            g.setColour (juce::Colours::white.withAlpha (0.06f * alpha));
+            g.strokePath (track, stroke, juce::AffineTransform::translation (0.0f, 0.8f));
+            g.setColour (colours::chamberDeep.withAlpha (0.9f * alpha));
+            g.strokePath (track, stroke);
         }
         else
         {
-            g.setColour ((onGlass ? colours::glassFaint : colours::inkMuted).withAlpha (0.6f * alpha));
-            g.fillEllipse (juce::Rectangle<float> (dotSize, dotSize).withCentre (p));
+            g.setColour (juce::Colours::white.withAlpha (0.8f * alpha));
+            g.strokePath (track, stroke, juce::AffineTransform::translation (0.0f, 0.9f));
+            g.setColour (colours::inkMuted.withAlpha (0.32f * alpha));
+            g.strokePath (track, stroke);
         }
-    }
-
-    // --- contact shadow ----------------------------------------------------------------
-    if (! onGlass)
-        gfx::paintContactShadow (g, juce::Rectangle<float> (ringR * 2.3f, ringR * 2.3f).withCentre (c.translated (0.0f, ringR * 0.18f)), 0.35f);
-
-    // --- machined silver ring -----------------------------------------------------------
-    {
-        const auto ring = juce::Rectangle<float> (ringR * 2.0f, ringR * 2.0f).withCentre (c);
-        // Polished chrome: bright top-left, a dark band, a second reflection, dark lower edge.
-        juce::ColourGradient metal (juce::Colour (0xfffcfdfe), ring.getX(), ring.getY(), juce::Colour (0xff6f7780), ring.getRight(),
-                                    ring.getBottom(), false);
-        metal.addColour (0.3, juce::Colour (0xffdde1e6));
-        metal.addColour (0.56, juce::Colour (0xff959da6));
-        metal.addColour (0.78, juce::Colour (0xffdbdfe4));
-        if (onGlass)
+        if (bipolar)
         {
-            metal = juce::ColourGradient (juce::Colour (0xff6d7680), ring.getX(), ring.getY(), juce::Colour (0xff262c33), ring.getRight(),
-                                          ring.getBottom(), false);
-            metal.addColour (0.4, juce::Colour (0xff4a525c));
-        }
-        g.setGradientFill (metal);
-        g.fillEllipse (ring);
-        g.setColour (juce::Colours::white.withAlpha (onGlass ? 0.15f : 0.85f));
-        g.drawEllipse (ring.reduced (0.6f), 0.9f);
-        g.setColour (juce::Colours::black.withAlpha (onGlass ? 0.35f : 0.42f));
-        g.drawEllipse (ring, 1.0f);
-    }
-
-    // --- graphite face -------------------------------------------------------------------
-    {
-        const auto face = juce::Rectangle<float> (faceR * 2.0f, faceR * 2.0f).withCentre (c);
-        juce::ColourGradient fg (juce::Colour (0xff3a4047), face.getCentreX() - faceR * 0.35f, face.getY() + faceR * 0.2f,
-                                 juce::Colour (0xff07090b), face.getCentreX() + faceR * 0.5f, face.getBottom(), true);
-        fg.addColour (0.45, juce::Colour (0xff171b20));
-        g.setGradientFill (fg);
-        g.fillEllipse (face);
-        // Fine concentric machining (very faint).
-        g.setColour (juce::Colours::white.withAlpha (0.025f));
-        for (float rr = faceR * 0.3f; rr < faceR; rr += faceR * 0.09f)
-            g.drawEllipse (juce::Rectangle<float> (rr * 2.0f, rr * 2.0f).withCentre (c), 0.6f);
-        // Soft top reflection
-        juce::ColourGradient refl (juce::Colours::white.withAlpha (hover ? 0.16f : 0.1f), c.x, face.getY(),
-                                   juce::Colours::white.withAlpha (0.0f), c.x, c.y, false);
-        g.setGradientFill (refl);
-        g.fillEllipse (face.reduced (faceR * 0.08f).withTrimmedBottom (faceR * 0.9f));
-        g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.drawEllipse (face, 1.0f);
-        if (dragging || hover)
-        {
-            g.setColour (colours::cyan.withAlpha (dragging ? 0.45f : 0.22f));
-            g.drawEllipse (face.expanded (0.8f), 1.0f);
+            // Zero mark at twelve o'clock.
+            g.setColour ((onGlass ? colours::glassMuted : colours::inkMuted).withAlpha (0.8f * alpha));
+            g.drawLine ({ onTrack (centreAngle, geo.trackR + geo.trackW * 1.3f), onTrack (centreAngle, geo.trackR + geo.trackW * 2.6f) },
+                        juce::jmax (1.0f, geo.trackW * 0.45f));
         }
     }
 
-    // --- pointer ---------------------------------------------------------------------------
+    // --- luminous value arc ----------------------------------------------------------------
+    const float a0 = bipolar ? juce::jmin (centreAngle, valueAngle) : start;
+    const float a1 = bipolar ? juce::jmax (centreAngle, valueAngle) : valueAngle;
+    if (a1 - a0 > 0.002f)
     {
-        const float a = valueAngle;
-        const float r0 = faceR * 0.6f, r1 = faceR * 0.94f;
-        const juce::Point<float> p0 (c.x + r0 * std::sin (a), c.y - r0 * std::cos (a));
-        const juce::Point<float> p1 (c.x + r1 * std::sin (a), c.y - r1 * std::cos (a));
-        const float w = juce::jmax (1.6f, faceR * (style == KnobStyle::macro ? 0.045f : 0.07f));
-        g.setColour (colours::cyan.withAlpha (0.25f * alpha));
-        g.drawLine ({ p0, p1 }, w * 2.6f);
-        g.setColour (juce::Colour (0xfff2f7fa).withAlpha (alpha));
-        g.drawLine ({ p0, p1 }, w);
+        juce::Path arc;
+        arc.addCentredArc (c.x, c.y, geo.trackR, geo.trackR, 0.0f, a0, a1, true);
+        g.setColour (colours::cyan.withAlpha ((onGlass ? 0.16f : 0.12f) * alpha));
+        g.strokePath (arc, juce::PathStrokeType (geo.trackW * 3.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (colours::cyan.withAlpha (0.26f * alpha));
+        g.strokePath (arc, juce::PathStrokeType (geo.trackW * 1.9f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (colours::cyan.withAlpha (alpha));
+        g.strokePath (arc, stroke);
+        g.setColour (colours::cyanBright.withAlpha (0.75f * alpha));
+        g.strokePath (arc, juce::PathStrokeType (geo.trackW * 0.38f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+    {
+        // The value point itself glows.
+        const auto e = onTrack (valueAngle, geo.trackR);
+        const float gr = geo.trackW * 2.8f;
+        g.setGradientFill (juce::ColourGradient (colours::cyan.withAlpha (0.5f * alpha), e.x, e.y, colours::cyan.withAlpha (0.0f),
+                                                 e.x + gr, e.y, true));
+        g.fillEllipse (juce::Rectangle<float> (gr * 2.0f, gr * 2.0f).withCentre (e));
+        g.setColour (colours::ice.withAlpha (alpha));
+        g.fillEllipse (juce::Rectangle<float> (geo.trackW * 1.2f, geo.trackW * 1.2f).withCentre (e));
+    }
+
+    // --- body: shadow, turned ring, anodized face (cached sprite) -------------------------------
+    // Disabled, the body stays solid and recedes under a veil of its surroundings (a
+    // translucent body would let the panel show through the cap).
+    blitBody (g, static_cast<int> (style), c, geo.ringR * 2.0f, 1.0f);
+    if (! enabled)
+    {
+        g.setColour ((onGlass ? colours::graphite : colours::panelFace).withAlpha (0.55f));
+        g.fillEllipse (juce::Rectangle<float> (geo.ringR * 2.0f, geo.ringR * 2.0f).withCentre (c));
+    }
+    const auto face = juce::Rectangle<float> (geo.faceR * 2.0f, geo.faceR * 2.0f).withCentre (c);
+    if (hover || dragging)
+    {
+        g.setColour (juce::Colours::white.withAlpha (dragging ? 0.05f : 0.035f));
+        g.fillEllipse (face.reduced (geo.faceR * 0.06f));
+        g.setColour (colours::cyan.withAlpha (dragging ? 0.55f : 0.3f));
+        g.drawEllipse (face.expanded (0.6f), 1.0f);
+    }
+
+    // --- pointer ---------------------------------------------------------------------------------
+    {
+        const float w = juce::jmax (1.6f, geo.faceR * (style == KnobStyle::macro ? 0.05f : 0.075f));
+        juce::Path pointer;
+        pointer.startNewSubPath (onTrack (valueAngle, geo.faceR * 0.56f));
+        pointer.lineTo (onTrack (valueAngle, geo.faceR * 0.9f));
+        g.setColour (colours::cyan.withAlpha (0.28f * alpha));
+        g.strokePath (pointer, juce::PathStrokeType (w * 2.8f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (juce::Colour (0xfff4f8fb).withAlpha (alpha));
+        g.strokePath (pointer, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
 }
 
